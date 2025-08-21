@@ -1,5 +1,5 @@
 # ISW_4K1_G4_2025
-Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Cálidad de Software del curso 4K1 del año 2025.
+Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de Software del curso 4K1 del año 2025.
 
 ## Integrantes
 1. Luna, Angel Nahuel - 89627
