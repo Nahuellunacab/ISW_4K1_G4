@@ -3,7 +3,7 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Cálidad de
 
 ## Integrantes
 1. Luna, Angel Nahuel - 89627
-2. Longo, Máximo - 97101
+2. Longo Prudencio, Máximo - 97101
 3. Uliana, Agustin - 97828
 4. Titón, Máximo - 98175
 5. Patolsky, Daniel - 92847
