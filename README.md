@@ -18,6 +18,16 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Cálidad de
 
 ISW_4K1_G4_2025
 ├──ReadMe
+├──Plan de Gestion de Configuracion
+    ├──Glosario
+    ├──Criterios de LB
+    ├──Identificacion de Items de Configuracion
+    ├──Estructura del Repositorio
 ├──Entregas
-|  ├──TP4
-     ├── 
+    ├──TPN# 
+        ├──Consigna
+        ├──Linea Base
+        ├──Producción
+├──Bibliografía
+   ├──Bibliografía de la Cátedra
+   ├──Material de Estudio
