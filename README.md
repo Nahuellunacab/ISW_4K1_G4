@@ -1,4 +1,4 @@
-# ISW_4K1_G4
+# ISW_4K1_G4_2025
 Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Cálidad de Software del curso 4K1 del año 2025.
 
 ## Integrantes
@@ -14,3 +14,10 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Cálidad de
 10. Carrió, Tomas - 94763
 
 ## Estructura del Repositorio
+
+
+ISW_4K1_G4_2025
+├──ReadMe
+├──Entregas
+|  ├──TP4
+     ├── 
