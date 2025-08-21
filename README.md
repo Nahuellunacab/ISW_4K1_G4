@@ -2,7 +2,7 @@
 Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de Software del curso 4K1 del año 2025.
 
 ## Integrantes
-- [Bailey, Julian - 96032]()
+- [Bailey, Julian - 96032](https://github.com/Shadow987654)
 - [Cufre, Angel Hugo - 94490](https://github.com/AngelHCufre)
 - [Carrió, Tomas - 94763]()
 - [Esposito, Nicolas - 90203](https://github.com/NicolasEsposito10)
