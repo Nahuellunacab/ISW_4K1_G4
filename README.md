@@ -14,9 +14,8 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 10. Carrió, Tomas - 94763
 
 ## Estructura del Repositorio
-
-
-ISW_4K1_G4_2025
+```
+ISW_4K1_G4
 ├──ReadMe
 ├──Plan de Gestion de Configuracion
     ├──Glosario
@@ -31,3 +30,9 @@ ISW_4K1_G4_2025
 ├──Bibliografía
    ├──Bibliografía de la Cátedra
    ├──Material de Estudio
+```
+
+## Ítems de Configuración y Reglas de Nombrado
+| Ítem de configuración             | Regla de Nombrado            | Ubicación |
+| ------------------------- | ------------------------------------- | ---------- |
+| Trabajos Prácticos | ISW_TP_<<NúmeroDeTP>>_<<Título>>.pdf | ISW_4K1_G4/Entregas/TPN<<NúmeroDeTP>>
