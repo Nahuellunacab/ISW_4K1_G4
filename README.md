@@ -3,7 +3,7 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 
 ## Integrantes
 - [Bailey, Julian - 96032]()
-- [Cufre, Angel - 94490]()
+- [Cufre, Angel Hugo - 94490](https://github.com/AngelHCufre)
 - [Carrió, Tomas - 94763]()
 - [Esposito, Nicolas - 90203]()
 - [Fernandez, Pablo - 95695]()
