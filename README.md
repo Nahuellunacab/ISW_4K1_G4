@@ -9,7 +9,7 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 - [Fernandez, Pablo - 95695]()
 - [Luna, Angel Nahuel - 89627](https://github.com/Nahuellunacab)
 - [Longo Prudencio, Máximo - 97101]()
-- [Patolsky, Daniel - 92847]()
+- [Patolsky, Daniel - 92847](https://github.com/DanielPatolsky)
 - [Titón, Máximo - 98175](https://github.com/maxiTiton)
 - [Uliana, Agustin - 97828](https://github.com/AgustinUliana97828)
 
