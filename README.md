@@ -36,3 +36,5 @@ ISW_4K1_G4
 | Ítem de configuración             | Regla de Nombrado            | Ubicación |
 | ------------------------- | ------------------------------------- | ---------- |
 | Trabajos Prácticos | ISW_TP_<<NúmeroDeTP>>_<<Título>>.pdf | ISW_4K1_G4/Entregas/TPN<<NúmeroDeTP>>
+
+## Criterio de establecimiento de Lineas Base
