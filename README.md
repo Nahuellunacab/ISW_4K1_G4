@@ -10,7 +10,7 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 - [Luna, Angel Nahuel - 89627](https://github.com/Nahuellunacab)
 - [Longo Prudencio, Máximo - 97101]()
 - [Patolsky, Daniel - 92847]()
-- [Titón, Máximo - 98175]()
+- [Titón, Máximo - 98175](https://github.com/maxiTiton)
 - [Uliana, Agustin - 97828](https://github.com/AgustinUliana97828)
 
 ## Estructura del Repositorio
