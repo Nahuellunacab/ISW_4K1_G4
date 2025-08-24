@@ -4,7 +4,8 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 ## Integrantes
 - [Bailey, Julian Eduardo - 96032](https://github.com/Shadow987654)
 - [Cufre, Ángel Hugo - 94490](https://github.com/AngelHCufre)
-- [Carrió, Tomás - 94763]()
+- [Carrió, Tomás - 94763](
+- https://github.com/TomiiC73
 - [Espósito, Nicolás - 90203](https://github.com/NicolasEsposito10)
 - [Fernandez, Pablo - 95695](https://github.com/FernandezPabloGabriel)
 - [Luna, Ángel Nahuel - 89627](https://github.com/Nahuellunacab)
