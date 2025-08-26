@@ -4,37 +4,11 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 ## Integrantes
 - [Bailey, Julian Eduardo - 96032](https://github.com/Shadow987654)
 - [Cufre, Ángel Hugo - 94490](https://github.com/AngelHCufre)
-- [Carrió, Tomás - 94763]()
+- [Carrió, Tomás - 94763](https://github.com/TomiiC73).
 - [Espósito, Nicolás - 90203](https://github.com/NicolasEsposito10)
-- [Fernandez, Pablo - 95695]()
+- [Fernandez, Pablo - 95695](https://github.com/FernandezPabloGabriel)
 - [Luna, Ángel Nahuel - 89627](https://github.com/Nahuellunacab)
 - [Longo Prudencio, Máximo - 97101]()
 - [Patolsky, Daniel - 92847](https://github.com/DanielPatolsky)
 - [Titón, Máximo - 98175](https://github.com/maxiTiton)
 - [Uliana, Agustín - 97828](https://github.com/AgustinUliana97828)
-
-## Estructura del Repositorio
-```
-ISW_4K1_G4
-├──ReadMe
-├──Plan de Gestion de Configuracion
-    ├──Glosario
-    ├──Criterios de LB
-    ├──Identificacion de Items de Configuracion
-    ├──Estructura del Repositorio
-├──Entregas
-    ├──TPN# 
-        ├──Consigna
-        ├──Linea Base
-        ├──Producción
-├──Bibliografía
-   ├──Bibliografía de la Cátedra
-   ├──Material de Estudio
-```
-
-## Ítems de Configuración y Reglas de Nombrado
-| Ítem de configuración             | Regla de Nombrado            | Ubicación |
-| ------------------------- | ------------------------------------- | ---------- |
-| Trabajos Prácticos | ISW_TP_<<NúmeroDeTP>>_<<Título>>.pdf | ISW_4K1_G4/Entregas/TPN<<NúmeroDeTP>>
-
-## Criterio de establecimiento de Lineas Base
