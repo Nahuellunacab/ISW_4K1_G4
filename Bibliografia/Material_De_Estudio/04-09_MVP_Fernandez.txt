@@ -1,0 +1,91 @@
+MVP => Minimo producto viable
+da validación a hipótesis => detecto nicho para atacar con sw
+
+MVP => Listado de US
+	=> entran en MVP. Aquellas prioritarias y que atacan el nicho de mercado y lo que me 	   pide el cliente directamente
+	=> no se incluyen en mvp
+	descripción
+	hipótesis => creada por nosostros(emprendedores) o impuestas
+
+Estimación => es un proceso (no métrica) de opinión que en base a lo que tenemos predecimos lo que debemos afrontar. Nos ayuda para empezar a planificar (un punta pie).
+
+Que estimamos? 
+	- Tradicional 
+		| => Tamaño (líneas de código / módulos de sw)
+		| => Esfuerzo (hs personas lineales - hs en las que escribo codigo)
+		| => Calendario (pueden pasar muchas cosas que generen retrasos)
+		V => Costo
+	- Agil
+		=> Tamaño (US = características del producto)
+		=> Unidad de medida (que la US se desarrolle en un sprint -S en INVEST-)
+		Estamos hechos para comparar, no para aproximar. Debemos tomar un punto de referencia del cual estimar tamaño. Agilismo toma esta carac. del humano
+		   NO puedo sin embargo decir cuando una US es mayor que otra, por eso elegimos una escala como unidad de medida.
+			=> Punto ref. => US canónica (es aquella que usamos para comparar)
+			=> se usan Story Points (SP) para determinar su tamaño.
+			=> ¿Qué carajos es un SP? Me define el peso de la US.
+			   ¿"	"	determina el peso? Mediante las sig. aristas:
+				=> Complejidad (fácil - intermedio - difícil - sádico(boe)) Objetivo
+				=> Esfuerzo (hs hombre) Subjetivo
+				=> Incertidumbre (Cantidad de info que tnego  antes de llevar a cabo la us. Tanto técnico como de dominio)
+				Varía de las habilidades del equipo y su expertise en el negocio.
+				La complejidad y esfuerzo van de la mano, por ejemplo, si quiero conectarme con el ARCA y no se cómo hacerlo, entonces requerirá mucho esfuerzo. Una vez hecho adquirí experiencia, por lo que la próxima vez que lo lleve a cabo requerirá menos esfuerzo (Aunque la complejidad se mantiene).
+			=> El valor de las escalas depende del equipo.
+Alcance => cuantas caract. va a tener el producto.
+La estimación se basa en la experiencia. 
+
+¿Cómo llevamos a cabo la estimación ágil?
+Poker planning => pueden seguir escala de fibonacci.
+- Toma las us y las presenta al equipo de des. Req tecn. f. nf. que hay que -cumplir.
+- Pongo peso
+- Proceso de votacion para estimar pso
+- Se puede negociar y voolver a la votacion.
+
+
+*************************************************************************
+ACTIVIDAD (TP2):
+App mobile
+- Ver Mapa interactivo
+	- Info detallada de cada exhibición
+- Acceder  hs atención
+- Mostrar info detallada de evento
+- Mostrar info detallada de horarios de alimentación disponivles
+- Mostrar recordatorio evento
+- Notificar evento.
+- Mostrar sitios importantes en mapa
+-- Mostrar ubicación tiempo real
+- Inscribirse a actividad.
+- Filtrar actividad
+- Configurar notificaciones.
+
+
+MVP =>
+Autogestion de entradas
+	=> ----Elegir medio de pago
+	=> Comprar entradas (Se lo ve de forma integral ya que el valor que aporta es el mismo prácticamente - Son criterios de aceptación los de abajo)
+		- Comprar entradas con tarjeta
+		- Comprar entradas con efectivo
+	=> Recibir mensaje de confirmación -> por INVEST vemos de que es dependiente de compra de entradas, por lo tanto, es dependiente y no sería una US.
+	=> 
+- Registrar usuario
+- Iniciar sesión
+- Cerrar sesión
+
+-----------------------------------------------------------------------------
+Inscribirse a actividad (2):
+Yo como visitante quiero poder inscribirme a una actividad para poder asegurar mi lugar en la misma.
+CA:
+- Se debe seleccionar el tipo de actividad.
+- Se debe seleccionar el horario de atención.
+- Se puede ingresar los talles de las vestimentas si la actividad lo demanda.
+- Se debe visualizar y aceptar los términos y condiciones
+- Se deben poder mostrar las actividades con cupos disponibles
+
+--> Usuario logueado es pre condición.
+PA:
+- Probar inscribirse con todos los campos adecuados rellenados (pasa)
+- Probar inscribirse sin aceptar los términos y condiciones (falla)
+- Probar elegir una actividad sin cupos (falla)
+- Probar elegir una actividad en un horario no disponible (falla)
+- Probar enviar formulario sin un campo requerido (falla)
+
+US Canonica => Registrar actividad (1)
