@@ -15,7 +15,7 @@ class TestInscripcionActividad(unittest.TestCase):
         """
         # === PRECONDICIONES ===
         payload = {
-            'actividad': 'Safari',
+            'actividad': 'Palestra',
             'cantidadPersonas': 1,
             'horario': '09:30 GMT-3',
             'personas': [
@@ -67,6 +67,6 @@ class TestInscripcionActividad(unittest.TestCase):
             )
             
 if __name__ == "__main__":
-    test_inscribirse_actividad_sin_aceptar_terminos()
+    unittest.main() 
 
     
