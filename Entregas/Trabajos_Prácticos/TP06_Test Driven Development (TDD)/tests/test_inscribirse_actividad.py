@@ -82,6 +82,7 @@ class TestInscripcionActividad(unittest.TestCase):
     # ============================================================
     # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
     # ============================================================
+    # Refactorizado
 
     def test_inscribirse_sin_talle_requerido(self):
         """
