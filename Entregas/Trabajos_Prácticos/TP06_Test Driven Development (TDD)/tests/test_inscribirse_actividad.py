@@ -21,6 +21,7 @@ class TestInscripcionActividad(unittest.TestCase):
         si 'aceptoTerminosYCondiciones' es False.
         """
         # === PRECONDICIONES ===
+        # TODO - Falta usuario en precondicion
         payload = {
             'actividad': 'Palestra',
             'cantidadPersonas': 1,
@@ -72,6 +73,11 @@ class TestInscripcionActividad(unittest.TestCase):
                 parsed['idInscripcion'],
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba para rechazar la inscripción a la actividad por no aceptar términos y condiciones ha PASADO")
+        
 
     # ============================================================
     # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
@@ -137,6 +143,61 @@ class TestInscripcionActividad(unittest.TestCase):
                 parsed['idInscripcion'],
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
+
+
+    def test_inscribirse_sin_cupo_en_horario_seleccionado_debe_fallar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que NO se permite la inscripción a una actividad
+        cuando no hay cupo disponible para el horario seleccionado.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',
+            'cantidadPersonas': 2,
+            'horario': '15:00 GMT-3',  # Horario sin cupo disponible
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                },
+                {
+                    'nombre': 'Fernando',
+                    'tallaVestimenta': 'S',
+                    'edad': 22,
+                    'DNI': '44912833'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue rechazada por falta de cupo ---
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción pese a que no había cupo disponible"
+        )
 
 if __name__ == "__main__":
     unittest.main()

@@ -45,6 +45,9 @@ def _validar_terminos_condiciones(payload: Dict[str, Any]) -> ResultadoInscripci
     Returns:
         ResultadoInscripcion con error si no se aceptaron términos, None si es válido
     """
+    # Si payload tiene aceptoTerminosYCondiciones, se devuelve su valor que 
+    # sería False en el caso de que se retorne algo.
+    # Si es False, entonces not False = True, por lo que entraría al blque con el primer return.
     if not payload.get('aceptoTerminosYCondiciones', False):
         return ResultadoInscripcion(False, MSG_ERROR_TERMINOS)
     return None
