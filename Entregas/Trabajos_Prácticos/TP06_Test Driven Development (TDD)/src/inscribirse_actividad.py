@@ -77,6 +77,41 @@ def _validar_talla_vestimenta(payload: Dict[str, Any]) -> ResultadoInscripcion:
     return None
 
 
+# Cupos simulados por horario y actividad (esto sería una BD en un sistema real)
+CUPOS_POR_HORARIO = {
+    'Tirolesa': {
+        '15:00 GMT-3': 0,   # sin cupos
+        '10:00 GMT-3': 5,   # con cupos disponibles
+    },
+    'Palestra': {
+        '09:30 GMT-3': 2,
+    },
+    'Safari': {
+        '14:00 GMT-3': 10,
+    }
+}
+
+MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
+
+
+def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que haya cupos disponibles para el horario seleccionado.
+    """
+    actividad = payload.get('actividad')
+    horario = payload.get('horario')
+    cantidad = payload.get('cantidadPersonas', 1)
+
+    cupos_actividad = CUPOS_POR_HORARIO.get(actividad, {})
+    cupos_disponibles = cupos_actividad.get(horario, 0)
+
+    # Si no hay cupos suficientes, devolver error
+    if cupos_disponibles < cantidad:
+        return ResultadoInscripcion(False, MSG_ERROR_SIN_CUPO)
+
+    return None
+
+
 def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     """
     Procesa la inscripción a una actividad del parque.
@@ -98,7 +133,8 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     # Ejecutar validaciones en orden de prioridad
     validaciones = [
         _validar_terminos_condiciones,
-        _validar_talla_vestimenta
+        _validar_talla_vestimenta,
+        _validar_cupo_disponible
     ]
     
     for validacion in validaciones:
@@ -114,3 +150,6 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     )
     
     return resultado.to_json()
+
+
+
