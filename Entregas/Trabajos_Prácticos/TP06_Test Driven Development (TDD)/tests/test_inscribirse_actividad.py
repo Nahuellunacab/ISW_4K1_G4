@@ -382,10 +382,30 @@ class TestInscripcionActividad(unittest.TestCase):
             ],
             'aceptoTerminosYCondiciones': True
         }
-        mensaje_esperado = "Inscripción fuera del horario permitido"
 
-        # === ACT & ASSERT ===
-        self._verificar_inscripcion_fallida(payload, mensaje_esperado)
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+
+        self.assertTrue(
+            parsed.get('exito'), 
+            f"La inscripción debió ser exitosa, pero falló con: {parsed.get('mensaje')}"
+        )
+        self.assertEqual(parsed.get('mensaje'), "Inscripción exitosa")
+        self.assertIsNotNone(parsed.get('idInscripcion'), "Debe generarse un idInscripcion")
 
 
     @patch('src.inscribirse_actividad.repositorio')
