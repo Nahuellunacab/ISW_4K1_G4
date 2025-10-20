@@ -117,7 +117,7 @@ class TestInscripcionActividad(unittest.TestCase):
 
 
     # ============================================================
-    # TEST 2: Sin aceptar Términos y Condiciones (PASA)
+    # TEST 2: Aceptando Términos y Condiciones (PASA) - TDD RED
     # ============================================================
     def test_inscribirse_aceptando_terminos_debe_pasar(self):
         """
