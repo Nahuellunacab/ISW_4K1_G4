@@ -267,6 +267,7 @@ class TestInscripcionActividad(unittest.TestCase):
         print(resultado)
         print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
 
+
     # ============================================================
     # Probar inscribirse a una actividad seleccionando un horario en el cual 
     # el parque está cerrado o la actividad no está disponible (Falla)
@@ -328,6 +329,72 @@ class TestInscripcionActividad(unittest.TestCase):
             self.assertIsNone(
                 parsed['idInscripcion'],
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
+
+
+    def test_inscribirse_dentro_de_horario_parque_y_actividad_abierto_debe_pasar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se permite la inscripción a una actividad
+        dentro del horario en el que el parque está abierto y la actividad está disponible.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',
+            'cantidadPersonas': 2,
+            'horario': '11:30 GMT-3',  
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                },
+                {
+                    'nombre': 'Julio',
+                    'tallaVestimenta': 'XL',
+                    'edad': 22,
+                    'DNI': '41152639'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción fuera del horario permitido"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción dentro del horario permitido",
+            "El mensaje no coincide con lo esperado"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNotNone(
+                parsed['idInscripcion'],
+                "Se generó 'idInscripcion' en la inscripción"
             )
 
 

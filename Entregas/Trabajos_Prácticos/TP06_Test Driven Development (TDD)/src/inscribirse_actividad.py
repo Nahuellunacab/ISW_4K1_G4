@@ -35,6 +35,7 @@ MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
 MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
 MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
+MSG_PASA_DENTRO_DE_HORARIO = "Inscripción dentro del horario permitido"
 
 
 # =============================
@@ -285,7 +286,7 @@ def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
     if not (HORA_APERTURA_PARQUE <= horario_inscripcion < HORA_CIERRE_ACTIVIDADES):
         return ResultadoInscripcion(False, MSG_ERROR_FUERA_DE_HORARIO)
 
-    return None
+    return ResultadoInscripcion(True, MSG_PASA_DENTRO_DE_HORARIO)
 
 
 # =============================
