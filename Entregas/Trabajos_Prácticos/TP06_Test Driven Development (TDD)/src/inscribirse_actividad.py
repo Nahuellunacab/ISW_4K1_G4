@@ -26,7 +26,7 @@ LIMITES_EDAD = {
 MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
-MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad"
+MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
 
 
 # =============================
@@ -225,7 +225,19 @@ def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
 def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
     """
     Valida que las personas cumplan con la edad mínima requerida por la actividad.
-    TDD FASE GREEN: Implementación mínima para pasar el test.
+    
+    TDD FASE REFACTOR: Mejoras en validación y mensajes de error.
+    
+    Límites según Product Owner:
+    - Palestra: 12 años mínimo
+    - Tirolesa: 8 años mínimo  
+    - Safari y Jardinería: sin límite de edad
+    
+    Args:
+        payload: Datos de la inscripción
+        
+    Returns:
+        ResultadoInscripcion con error si hay personas menores al límite, None si todo está bien
     """
     actividad = payload.get('actividad', '')
     limite_edad = LIMITES_EDAD.get(actividad, 0)
@@ -236,9 +248,15 @@ def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
     
     personas = payload.get('personas', [])
     for persona in personas:
-        edad = persona.get('edad', 0)
+        edad = persona.get('edad')
+        
+        # Validar que la edad sea un número válido
+        if not isinstance(edad, (int, float)) or edad < 0:
+            return ResultadoInscripcion(False, "Edad debe ser un número válido")
+            
         if edad < limite_edad:
-            return ResultadoInscripcion(False, MSG_ERROR_EDAD_INSUFICIENTE)
+            mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(limite=limite_edad)
+            return ResultadoInscripcion(False, mensaje_error)
     
     return None
 
