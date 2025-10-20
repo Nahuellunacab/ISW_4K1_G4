@@ -9,6 +9,46 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from inscribirse_actividad import inscribirse_a_actividad
 
 class TestInscripcionActividad(unittest.TestCase):
+    def _verificar_inscripcion_fallida(self, payload, mensaje_esperado):
+        """
+        Método auxiliar para verificar los casos de prueba de inscripciones fallidas.
+        """
+        # ACT
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # ASSERT
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertFalse(
+            parsed['exito'],
+            f"Se esperaba que la inscripción fallara, pero fue exitosa. Mensaje: {parsed.get('mensaje')}"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            mensaje_esperado,
+            "El mensaje de error no coincide con lo esperado"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
 
     # ============================================================
     # TEST 1: Sin aceptar Términos y Condiciones (FALLA)
@@ -21,6 +61,7 @@ class TestInscripcionActividad(unittest.TestCase):
         si 'aceptoTerminosYCondiciones' es False.
         """
         # === PRECONDICIONES ===
+        # TODO - Falta usuario en precondicion
         payload = {
             'actividad': 'Palestra',
             'cantidadPersonas': 1,
@@ -74,8 +115,9 @@ class TestInscripcionActividad(unittest.TestCase):
             )
 
     # ============================================================
-    # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
+    # TEST 3: Sin ingresar talle de vestimenta requerido (FALLA)
     # ============================================================
+    # Refactorizado
 
     def test_inscribirse_sin_talle_requerido(self):
         """
@@ -84,6 +126,8 @@ class TestInscripcionActividad(unittest.TestCase):
         vestimenta (Palestra o Tirolesa) si no se proporciona 'tallaVestimenta'.
         """
         # === PRECONDICIONES ===
+        # Palestra y Tirolesa requieren talla de vestimenta
+        # Safari y Jardinería NO requieren talla de vestimenta
         payload = {
             'actividad': 'Palestra',  # Requiere vestimenta
             'cantidadPersonas': 1,
@@ -136,9 +180,6 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
-    # ============================================================
-    # TEST 3: Sin cupo disponible (FALLA)
-    # ============================================================
 
     def test_inscribirse_sin_cupo_en_horario_seleccionado_debe_fallar(self):
         """
@@ -167,40 +208,19 @@ class TestInscripcionActividad(unittest.TestCase):
             ],
             'aceptoTerminosYCondiciones': True
         }
+        mensaje_esperado = "No hay cupos disponibles para el horario seleccionado"
 
-        # === ACT ===
-        try:
-            resultado = inscribirse_a_actividad(payload)
-        except NotImplementedError:
-            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+        # === ACT & ASSERT ===
+        self._verificar_inscripcion_fallida(payload, mensaje_esperado)
 
-        # === ASSERT ===
-        self.assertIsInstance(
-            resultado, str,
-            "La función debe devolver un string con formato JSON"
-        )
-
-        try:
-            parsed = json.loads(resultado)
-        except json.JSONDecodeError:
-            self.fail("La respuesta no tiene un formato JSON válido")
-
-        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
-        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
-
-        # --- Verifica que la inscripción fue rechazada por falta de cupo ---
-        self.assertFalse(
-            parsed['exito'],
-            "Se permitió la inscripción pese a que no había cupo disponible"
-        )
 
     # ============================================================
-    # TEST 4: Inscripción con edad menor al límite requerido (FALLA) - TDD
+    # TEST 4: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
     # ============================================================
     
     def test_inscribirse_con_edad_menor_al_limite_debe_fallar(self):
         """
-        Caso de prueba TDD:
+        Caso de prueba TDD - FASE RED:
         Verificar que NO se permite la inscripción cuando la edad
         de la persona es menor al límite requerido por la actividad.
         Palestra: 12 años mínimo, Tirolesa: 8 años mínimo
@@ -259,8 +279,13 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
+
+
     # ============================================================
-    # TEST 5: Inscripción exitosa con todos los datos correctos (PASA)
+    # TEST 4: Inscripción exitosa con todos los datos correctos (PASA)
     # ============================================================
     
     def test_inscribirse_exitosamente_con_todos_los_datos_correctos(self):
@@ -268,12 +293,14 @@ class TestInscripcionActividad(unittest.TestCase):
         Caso de prueba (TDD):
         Verificar que se permite la inscripción cuando todos los datos
         son válidos y hay cupo disponible.
+        Cubre: "Probar inscribirse a una actividad del listado que poseen cupos disponibles,
+        seleccionando un horario, ingresando los datos del visitante y aceptando términos (pasa)"
         """
         # === PRECONDICIONES ===
         payload = {
             'actividad': 'Tirolesa',  
             'cantidadPersonas': 1,
-            'horario': '11:00 GMT-3',  # Horario con cupos disponibles
+            'horario': '11:00 GMT-3',  # Nuevo horario con 15 cupos disponibles
             'personas': [
                 {
                     'nombre': 'Julian',
@@ -308,7 +335,7 @@ class TestInscripcionActividad(unittest.TestCase):
         # --- Verifica que la inscripción fue exitosa ---
         self.assertTrue(
             parsed['exito'],
-            f"La inscripción falló cuando debería haber sido exitosa. Mensaje: {parsed.get('mensaje')}"
+            "La inscripción falló cuando debería haber sido exitosa"
         )
 
         self.assertEqual(
@@ -322,8 +349,13 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertIsNotNone(parsed['idInscripcion'], "El 'idInscripcion' no debe ser None")
         self.assertNotEqual(parsed['idInscripcion'], "", "El 'idInscripcion' no debe estar vacío")
 
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba de inscripción exitosa ha PASADO")
+
+
     # ============================================================
-    # TEST 6: Inscripción a actividad que NO requiere vestimenta (PASA)
+    # TEST 5: Inscripción a actividad que NO requiere vestimenta (PASA)
     # ============================================================
     
     def test_inscribirse_a_actividad_sin_requerir_vestimenta(self):
@@ -331,6 +363,8 @@ class TestInscripcionActividad(unittest.TestCase):
         Caso de prueba (TDD):
         Verificar que se puede inscribir a actividades que NO requieren
         talla de vestimenta (Safari, Jardinería) sin proporcionar talla.
+        Cubre: "Probar inscribirse a una actividad sin ingresar talle de vestimenta 
+        porque la actividad no lo requiere (pasa)"
         """
         # === PRECONDICIONES ===
         payload = {
@@ -372,17 +406,18 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertEqual(parsed.get('mensaje'), "Inscripción exitosa")
         self.assertIsNotNone(parsed.get('idInscripcion'), "Debe generarse un idInscripcion")
 
-    # ============================================================
-    # TEST 7: Inscripción en horario no disponible/parque cerrado (FALLA)
-    # ============================================================
-    
-    def test_inscribirse_en_horario_no_disponible_debe_fallar(self):
+
+    @patch('src.inscribirse_actividad.repositorio')
+    def test_inscribirse_a_una_actividad_en_horario_disponible_debe_pasar(self, mock_repositorio):
         """
-        Caso de prueba (TDD):
-        Verificar que NO se permite la inscripción cuando se selecciona
-        un horario en el cual el parque está cerrado o la actividad no está disponible.
+        Verifica que una inscripción exitosa funcione correctamente,
+        utilizando un mock para simular la base de datos.
         """
-        # === PRECONDICIONES ===
+        # 1. Arrange: Configure the mock to simulate a successful scenario.
+        # We tell the mock to return 'True' when these methods are called.
+        mock_repositorio.horario_existe.return_value = True
+        mock_repositorio.hay_cupo.return_value = True
+
         payload = {
             'actividad': 'Tirolesa',
             'cantidadPersonas': 1,
@@ -437,8 +472,9 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
+
     # ============================================================
-    # TEST 8: Inscripción con múltiples personas válidas (PASA)
+    # TEST 7: Inscripción con múltiples personas válidas (PASA)
     # ============================================================
     
     def test_inscribirse_con_multiples_personas_validas(self):
@@ -451,7 +487,7 @@ class TestInscripcionActividad(unittest.TestCase):
         payload = {
             'actividad': 'Tirolesa',  # Requiere vestimenta y edad mínima 8 años
             'cantidadPersonas': 2,
-            'horario': '10:00 GMT-3',  # Horario con cupo disponible
+            'horario': '10:00 GMT-3',  # Horario con cupo disponible (ahora 10 cupos)
             'personas': [
                 {
                     'nombre': 'Ana',
@@ -492,7 +528,7 @@ class TestInscripcionActividad(unittest.TestCase):
         # --- Verifica que la inscripción fue exitosa ---
         self.assertTrue(
             parsed['exito'],
-            f"La inscripción múltiple falló cuando debería haber sido exitosa. Mensaje: {parsed.get('mensaje')}"
+            "La inscripción múltiple falló cuando debería haber sido exitosa"
         )
 
         self.assertEqual(
@@ -505,6 +541,69 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertIn('idInscripcion', parsed, "Debe incluir 'idInscripcion' cuando la inscripción es exitosa")
         self.assertIsNotNone(parsed['idInscripcion'], "El 'idInscripcion' no debe ser None")
 
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba de inscripción múltiple exitosa ha PASADO")
+
+
+    @patch('src.inscribirse_actividad.repositorio')
+    def test_inscribirse_con_cupo_y_horario_validos_debe_pasar(self, mock_repositorio):
+        """
+        Caso de prueba (Unitario):
+        Verificar que se permite la inscripción a una actividad
+        cuando el repositorio confirma que hay cupo y el horario es válido.
+        """
+        # 1. Arrange: Configurar el mock para simular el escenario exitoso.
+        mock_repositorio.horario_existe.return_value = True
+        mock_repositorio.hay_cupo.return_value = True
+        
+        payload = {
+            'actividad': 'Jardineria',
+            'cantidadPersonas': 2,
+            'horario': '15:00 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                },
+                {
+                    'nombre': 'Fernando',
+                    'tallaVestimenta': 'S',
+                    'edad': 22,
+                    'DNI': '44912833'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # 2. Act: Llamar a la función bajo prueba.
+        resultado = inscribirse_a_actividad(payload)
+
+        # 3. Assert: Verificar el resultado exitoso.
+        self.assertIsInstance(resultado, str, "La función debe devolver un string con formato JSON")
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertTrue(parsed.get('exito'), "La inscripción debería haber sido exitosa.")
+        self.assertEqual(parsed.get('mensaje'), "Inscripción exitosa")
+        self.assertIn('idInscripcion', parsed, "Debe incluir la clave 'idInscripcion' en caso de éxito")
+        self.assertIsNotNone(parsed.get('idInscripcion'), "Se debe generar un 'idInscripcion' válido.")
+
+        # 4. Assert de Interacciones: Verificar que se llamó a la base de datos como se esperaba.
+        self.assertEqual(
+            mock_repositorio.agregar_inscripcion.call_count,
+            payload['cantidadPersonas'],
+            "Se esperaba una llamada a agregar_inscripcion por cada persona"
+        )
+        mock_repositorio.descontar_cupo.assert_called_once_with(
+            'Jardineria', '15:00 GMT-3', 2
+        )
 
 if __name__ == "__main__":
     unittest.main()
+    

@@ -128,15 +128,10 @@ class RepositorioActividadesSQLite:
                 )
                 """,
                 [
-                    ('Tirolesa', '15:00 GMT-3', 0),  # Sin cupo para tests de falla
-                    ('Tirolesa', '10:00 GMT-3', 10), # Aumentar cupos para tests múltiples
-                    ('Tirolesa', '11:00 GMT-3', 15), # Horario adicional para tests exitosos
-                    ('Palestra', '09:30 GMT-3', 12), # Aumentar cupos según Product Owner
-                    ('Palestra', '16:00 GMT-3', 12), # Horario adicional
-                    ('Safari', '14:00 GMT-3', 8),    # Cupos según Product Owner  
-                    ('Safari', '15:30 GMT-3', 8),    # Horario adicional
-                    ('Jardineria', '10:30 GMT-3', 12), # Agregar Jardinería
-                    ('Jardineria', '13:00 GMT-3', 12)  # Horario adicional Jardinería
+                    ('Tirolesa', '10:00 GMT-3', 10),
+                    ('Palestra', '09:30 GMT-3', 12), 
+                    ('Safari', '14:00 GMT-3', 8),
+                    ('Jardineria', '10:30 GMT-3', 12),
                 ]
             )
             conn.commit()
