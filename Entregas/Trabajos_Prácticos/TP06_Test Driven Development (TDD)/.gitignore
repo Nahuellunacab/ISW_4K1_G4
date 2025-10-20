@@ -3,14 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-<<<<<<< HEAD
 */_pycache_/*
 */.vscode/*
-=======
 # Databases
 *.db
 *.sqlite3
 
 # Project-specific
 chat.md
->>>>>>> 0522ca0c67015dff569f56f9a4e9be56dbe85a66
