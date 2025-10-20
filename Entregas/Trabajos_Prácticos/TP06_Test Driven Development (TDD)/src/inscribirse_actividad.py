@@ -286,7 +286,7 @@ def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
     if not (HORA_APERTURA_PARQUE <= horario_inscripcion < HORA_CIERRE_ACTIVIDADES):
         return ResultadoInscripcion(False, MSG_ERROR_FUERA_DE_HORARIO)
 
-    return ResultadoInscripcion(True, MSG_PASA_DENTRO_DE_HORARIO)
+    return None
 
 
 # =============================

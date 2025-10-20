@@ -263,10 +263,6 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
-        # === RESULT ===
-        print(resultado)
-        print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
-
 
     # ============================================================
     # Probar inscribirse a una actividad seleccionando un horario en el cual 
@@ -341,20 +337,14 @@ class TestInscripcionActividad(unittest.TestCase):
         # === PRECONDICIONES ===
         payload = {
             'actividad': 'Tirolesa',
-            'cantidadPersonas': 2,
-            'horario': '11:30 GMT-3',  
+            'cantidadPersonas': 1,
+            'horario': '10:00 GMT-3',  
             'personas': [
                 {
-                    'nombre': 'Julian',
-                    'tallaVestimenta': 'M',
-                    'edad': 21,
-                    'DNI': '44152639'
-                },
-                {
-                    'nombre': 'Julio',
-                    'tallaVestimenta': 'XL',
-                    'edad': 22,
-                    'DNI': '41152639'
+                    'nombre': 'Valeria',
+                    'tallaVestimenta': 'S',
+                    'edad': 30,
+                    'DNI': '39123456'
                 }
             ],
             'aceptoTerminosYCondiciones': True
@@ -380,22 +370,23 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
         self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
 
-        self.assertFalse(
+        self.assertTrue(
             parsed['exito'],
-            "Se permitió la inscripción fuera del horario permitido"
-        )
+            f"La inscripción debería haber sido exitosa. Mensaje: {parsed.get('mensaje')}"
+        ) # "Se permitió la inscripción fuera del horario permitido"
 
         self.assertEqual(
             parsed['mensaje'],
-            "Inscripción dentro del horario permitido",
-            "El mensaje no coincide con lo esperado"
+             "Inscripción exitosa",
+            "El mensaje de éxito no coincide con lo esperado"
         )
 
-        if 'idInscripcion' in parsed:
-            self.assertIsNotNone(
-                parsed['idInscripcion'],
-                "Se generó 'idInscripcion' en la inscripción"
-            )
+        self.assertIn('idInscripcion', parsed, "El resultado debe incluir la clave 'idInscripcion'")
+
+        self.assertIsNotNone(
+            parsed['idInscripcion'],
+            "Debería generarse un 'idInscripcion' en una inscripción exitosa"
+        )
 
 
 if __name__ == "__main__":
