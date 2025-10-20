@@ -74,11 +74,6 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
-        # === RESULT ===
-        print(resultado)
-        print("- La prueba para rechazar la inscripción a la actividad por no aceptar términos y condiciones ha PASADO")
-        
-
     # ============================================================
     # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
     # ============================================================
@@ -265,10 +260,6 @@ class TestInscripcionActividad(unittest.TestCase):
                 parsed['idInscripcion'],
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
-
-        # === RESULT ===
-        print(resultado)
-        print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
 
 
 if __name__ == "__main__":
