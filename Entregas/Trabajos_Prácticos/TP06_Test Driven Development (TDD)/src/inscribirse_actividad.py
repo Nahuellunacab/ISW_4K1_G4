@@ -36,6 +36,7 @@ MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
 MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
 MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
 MSG_PASA_DENTRO_DE_HORARIO = "Inscripción dentro del horario permitido"
+MSG_ERROR_HORARIO_NO_EXISTE = "El horario seleccionado no existe para la actividad indicada"
 
 
 # =============================
@@ -135,6 +136,21 @@ class RepositorioActividadesSQLite:
             )
             conn.commit()
 
+    # Función para verificar si un horario existe para una actividad -> Test inscribirse horario no disponible
+
+    def horario_existe(self, actividad: str, horario: str) -> bool:
+        """Verifica si un horario específico existe para una actividad."""
+        query = """
+        SELECT 1
+        FROM horarios
+        JOIN actividades ON horarios.actividad_id = actividades.id
+        WHERE actividades.nombre = ? AND horarios.hora = ?
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(query, (actividad, horario))
+            return cur.fetchone() is not None
+
     # ========================================================
     # Operaciones de consulta y actualización de cupos
     # ========================================================
@@ -220,6 +236,14 @@ def _validar_talla_vestimenta(payload: Dict[str, Any]) -> ResultadoInscripcion:
             return ResultadoInscripcion(False, MSG_ERROR_TALLA_REQUERIDA)
     return None
 
+# funcion para validar si el horario existe para la actividad -> test inscribirse horario no disponible
+
+def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    actividad = payload.get('actividad')
+    horario = payload.get('horario')
+    if not repositorio.horario_existe(actividad, horario):
+        return ResultadoInscripcion(False, MSG_ERROR_HORARIO_NO_EXISTE)
+    return None
 
 def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
@@ -301,6 +325,7 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
         _validar_talla_vestimenta,
         _validar_edad_minima,  # TDD GREEN: Agregar validación de edad
         _validar_horario_parque,
+        _validar_horario_existente,
         _validar_cupo_disponible
     ]
 

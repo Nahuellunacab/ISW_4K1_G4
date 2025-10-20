@@ -1,4 +1,11 @@
-./actividades.db
-./chat.md
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-*/_pycache_/
+# Databases
+*.db
+*.sqlite3
+
+# Project-specific
+chat.md

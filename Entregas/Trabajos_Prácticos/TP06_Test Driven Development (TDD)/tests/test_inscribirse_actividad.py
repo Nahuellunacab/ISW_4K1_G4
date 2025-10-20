@@ -387,7 +387,43 @@ class TestInscripcionActividad(unittest.TestCase):
             parsed['idInscripcion'],
             "Debería generarse un 'idInscripcion' en una inscripción exitosa"
         )
+                  
+    def _assert_inscripcion_falla(self, payload, expected_error_message):
+        """Método auxiliar para verificar que una inscripción falle con un mensaje específico."""
+        resultado = inscribirse_a_actividad(payload)
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
 
+        self.assertFalse(parsed.get('exito'), f"La inscripción debió fallar pero tuvo éxito. Payload: {payload}")
+        self.assertEqual(parsed.get('mensaje'), expected_error_message, f"Mensaje de error inesperado. Se recibió: {parsed.get('mensaje')}")
+        self.assertIsNone(parsed.get('idInscripcion'), f"No debería generarse idInscripcion si la inscripción falla. Payload: {payload}")
+
+    def test_inscribirse_actividad_horario_no_disponible(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que NO se permite la inscripción a una actividad en un
+        horario que no está disponible para la misma.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Safari',
+            'cantidadPersonas': 1,
+            'horario': '11:00 GMT-3',  # Horario NO existente para Safari
+            'personas': [
+                {
+                    'nombre': 'Juan',
+                    'edad': 30,
+                    'DNI': '30123456'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+        mensaje_esperado = "El horario seleccionado no existe para la actividad indicada"
+
+        # === ACT & ASSERT ===
+        self._assert_inscripcion_falla(payload, mensaje_esperado)
 
 if __name__ == "__main__":
     unittest.main()
