@@ -33,10 +33,14 @@ LIMITES_EDAD = {
 MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
-MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
+MSG_ERROR_EDAD_INSUFICIENTE = (
+    "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
+)
 MSG_ERROR_EDAD_INVALIDA = "Edad debe ser un número válido"
 MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
-MSG_ERROR_HORARIO_NO_EXISTE = "El horario seleccionado no existe para la actividad indicada"
+MSG_ERROR_HORARIO_NO_EXISTE = (
+    "El horario seleccionado no existe para la actividad indicada"
+)
 
 
 # =============================
@@ -109,7 +113,8 @@ class RepositorioActividadesSQLite:
 
             # Actividades base
             cur.executemany(
-                "INSERT OR IGNORE INTO actividades (nombre, requiere_vestimenta) VALUES (?, ?)",
+                ("INSERT OR IGNORE INTO actividades "
+                 "(nombre, requiere_vestimenta) VALUES (?, ?)"),
                 [
                     ('Tirolesa', 1),
                     ('Palestra', 1),
@@ -129,15 +134,15 @@ class RepositorioActividadesSQLite:
                 """,
                 [
                     ('Tirolesa', '10:00 GMT-3', 10),
-                    ('Palestra', '09:30 GMT-3', 12), 
+                    ('Palestra', '09:30 GMT-3', 12),
                     ('Safari', '14:00 GMT-3', 8),
                     ('Jardineria', '10:30 GMT-3', 12),
                 ]
             )
             conn.commit()
 
-    # Función para verificar si un horario existe para una actividad -> Test inscribirse horario no disponible
-
+    # Función para verificar si un horario existe para una actividad
+    # -> Test inscribirse horario no disponible
     def horario_existe(self, actividad: str, horario: str) -> bool:
         """Verifica si un horario específico existe para una actividad."""
         query = """
@@ -187,7 +192,9 @@ class RepositorioActividadesSQLite:
             cur.execute(query, (cantidad, actividad, horario))
             conn.commit()
 
-    def agregar_inscripcion(self, actividad: str, horario: str, persona: Dict[str, Any]):
+    def agregar_inscripcion(
+        self, actividad: str, horario: str, persona: Dict[str, Any]
+    ):
         query = """
         INSERT INTO inscripciones (actividad_id, horario_id, nombre_persona, talla_vestimenta, edad, dni)
         VALUES (
@@ -236,7 +243,9 @@ def _validar_talla_vestimenta(payload: Dict[str, Any]) -> ResultadoInscripcion:
             return ResultadoInscripcion(False, MSG_ERROR_TALLA_REQUERIDA)
     return None
 
-# funcion para validar si el horario existe para la actividad -> test inscribirse horario no disponible
+# funcion para validar si el horario existe para la actividad
+# -> test inscribirse horario no disponible
+
 
 def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
@@ -244,6 +253,7 @@ def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
     if not repositorio.horario_existe(actividad, horario):
         return ResultadoInscripcion(False, MSG_ERROR_HORARIO_NO_EXISTE)
     return None
+
 
 def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
@@ -257,45 +267,50 @@ def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
 
 def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
     """
-    Valida que las personas cumplan con la edad mínima requerida por la actividad.
-    
+    Valida que las personas cumplan con la edad mínima requerida.
+
     TDD FASE REFACTOR: Mejoras en validación y mensajes de error.
-    
+
     Límites según Product Owner:
     - Palestra: 12 años mínimo
-    - Tirolesa: 8 años mínimo  
+    - Tirolesa: 8 años mínimo
     - Safari y Jardinería: sin límite de edad
-    
+
     Args:
         payload: Datos de la inscripción
-        
+
     Returns:
-        ResultadoInscripcion con error si hay personas menores al límite, None si todo está bien
+        ResultadoInscripcion con error si hay personas menores al límite,
+        None si todo está bien
     """
     actividad = payload.get('actividad', '')
     limite_edad = LIMITES_EDAD.get(actividad, 0)
-    
+
     # Si no hay límite de edad, no validar
     if limite_edad == 0:
         return None
-    
+
     personas = payload.get('personas', [])
     for persona in personas:
         edad = persona.get('edad')
-        
+
         # Validar que la edad sea un número válido
         if not isinstance(edad, (int, float)) or edad < 0:
             return ResultadoInscripcion(False, MSG_ERROR_EDAD_INVALIDA)
-            
+
         if edad < limite_edad:
-            mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(limite=limite_edad)
+            mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(
+                limite=limite_edad
+            )
             return ResultadoInscripcion(False, mensaje_error)
-    
+
     return None
 
 
 def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
-    """Valida que la inscripción se realice dentro del horario de apertura del parque."""
+    """
+    Valida que la inscripción se realice dentro del horario de apertura.
+    """
     try:
         horario_str = payload.get('horario', '').split(' ')[0]
         if not horario_str:
@@ -307,7 +322,8 @@ def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
         # pero es bueno ser robusto. De momento, lo ignoramos para este test.
         return None
 
-    if not (HORA_APERTURA_PARQUE <= horario_inscripcion < HORA_CIERRE_ACTIVIDADES):
+    if not (HORA_APERTURA_PARQUE <= horario_inscripcion <
+            HORA_CIERRE_ACTIVIDADES):
         return ResultadoInscripcion(False, MSG_ERROR_FUERA_DE_HORARIO)
 
     return None
@@ -336,8 +352,12 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
 
     # Registrar inscripción y descontar cupos
     for persona in payload.get("personas", []):
-        repositorio.agregar_inscripcion(payload["actividad"], payload["horario"], persona)
-    repositorio.descontar_cupo(payload["actividad"], payload["horario"], payload["cantidadPersonas"])
+        repositorio.agregar_inscripcion(
+            payload["actividad"], payload["horario"], persona
+        )
+    repositorio.descontar_cupo(
+        payload["actividad"], payload["horario"], payload["cantidadPersonas"]
+    )
 
     resultado = ResultadoInscripcion(
         exito=True,
