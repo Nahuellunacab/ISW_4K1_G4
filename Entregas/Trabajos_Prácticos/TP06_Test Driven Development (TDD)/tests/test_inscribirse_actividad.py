@@ -209,7 +209,7 @@ class TestInscripcionActividad(unittest.TestCase):
             ],
             'aceptoTerminosYCondiciones': True
         }
-        mensaje_esperado = "No hay cupo disponible para el horario seleccionado"
+        mensaje_esperado = "No hay cupos disponibles para el horario seleccionado"
 
         # === ACT & ASSERT ===
         self._verificar_inscripcion_fallida(payload, mensaje_esperado)
@@ -576,7 +576,11 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertIsNotNone(parsed.get('idInscripcion'), "Se debe generar un 'idInscripcion' válido.")
 
         # 4. Assert de Interacciones: Verificar que se llamó a la base de datos como se esperaba.
-        mock_repositorio.agregar_inscripcion.assert_called_once()
+        self.assertEqual(
+            mock_repositorio.agregar_inscripcion.call_count,
+            payload['cantidadPersonas'],
+            "Se esperaba una llamada a agregar_inscripcion por cada persona"
+        )
         mock_repositorio.descontar_cupo.assert_called_once_with(
             'Jardineria', '15:00 GMT-3', 2
         )
