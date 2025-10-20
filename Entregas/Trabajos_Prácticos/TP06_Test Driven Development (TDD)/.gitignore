@@ -1,4 +1,5 @@
 ./actividades.db
 ./chat.md
 
-*/_pycache_/
+*/_pycache_/*
+*/.vscode/*
