@@ -200,6 +200,77 @@ class TestInscripcionActividad(unittest.TestCase):
             "Se permitió la inscripción pese a que no había cupo disponible"
         )
 
+
+    # ============================================================
+    # TEST 7: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
+    # ============================================================
+    
+    def test_inscribirse_con_edad_menor_al_limite_debe_fallar(self):
+        """
+        Caso de prueba TDD - FASE RED:
+        Verificar que NO se permite la inscripción cuando la edad
+        de la persona es menor al límite requerido por la actividad.
+        Palestra: 12 años mínimo, Tirolesa: 8 años mínimo
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Palestra',  # Requiere 12 años mínimo
+            'cantidadPersonas': 1,
+            'horario': '09:30 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Niño',
+                    'tallaVestimenta': 'S',
+                    'edad': 10,  # MENOR AL LÍMITE DE 12 AÑOS
+                    'DNI': '99888777'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue rechazada por edad ---
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción con edad menor al límite requerido"
+        )
+
+        self.assertIn(
+            "edad",
+            parsed['mensaje'].lower(),
+            "El mensaje de error debe mencionar el problema de edad"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
+
+
 if __name__ == "__main__":
     unittest.main()
     
