@@ -1,14 +1,55 @@
 import unittest
+from unittest.mock import patch
 import json
 import sys
 import os
 
 # Agregar el directorio src al path para importar el módulo
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '')))
 
-from inscribirse_actividad import inscribirse_a_actividad
+from src.inscribirse_actividad import inscribirse_a_actividad
 
 class TestInscripcionActividad(unittest.TestCase):
+    def _verificar_inscripcion_fallida(self, payload, mensaje_esperado):
+        """
+        Método auxiliar para verificar los casos de prueba de inscripciones fallidas.
+        """
+        # ACT
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # ASSERT
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertFalse(
+            parsed['exito'],
+            f"Se esperaba que la inscripción fallara, pero fue exitosa. Mensaje: {parsed.get('mensaje')}"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            mensaje_esperado,
+            "El mensaje de error no coincide con lo esperado"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
 
     # ============================================================
     # TEST 1: Sin aceptar Términos y Condiciones (FALLA)
@@ -278,7 +319,7 @@ class TestInscripcionActividad(unittest.TestCase):
         payload = {
             'actividad': 'Tirolesa',
             'cantidadPersonas': 1,
-            'horario': '22:30 GMT-3',  
+            'horario': '22:30 GMT-3',
             'personas': [
                 {
                     'nombre': 'Julian',
@@ -289,116 +330,52 @@ class TestInscripcionActividad(unittest.TestCase):
             ],
             'aceptoTerminosYCondiciones': True
         }
+        mensaje_esperado = "Inscripción fuera del horario permitido"
 
-        # === ACT ===
-        try:
-            resultado = inscribirse_a_actividad(payload)
-        except NotImplementedError:
-            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
-
-        # === ASSERT ===
-        self.assertIsInstance(
-            resultado, str,
-            "La función debe devolver un string con formato JSON"
-        )
-
-        try:
-            parsed = json.loads(resultado)
-        except json.JSONDecodeError:
-            self.fail("La respuesta no tiene un formato JSON válido")
-
-        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
-        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
-
-        self.assertFalse(
-            parsed['exito'],
-            "Se permitió la inscripción fuera del horario permitido"
-        )
-
-        self.assertEqual(
-            parsed['mensaje'],
-            "Inscripción fuera del horario permitido",
-            "El mensaje de error no coincide con lo esperado"
-        )
-
-        if 'idInscripcion' in parsed:
-            self.assertIsNone(
-                parsed['idInscripcion'],
-                "No debería generarse 'idInscripcion' cuando la inscripción falla"
-            )
+        # === ACT & ASSERT ===
+        self._verificar_inscripcion_fallida(payload, mensaje_esperado)
 
 
-    def test_inscribirse_dentro_de_horario_parque_y_actividad_abierto_debe_pasar(self):
+    @patch('src.inscribirse_actividad.repositorio')
+    def test_inscribirse_a_una_actividad_debe_pasar(self, mock_repositorio):
         """
-        Caso de prueba (TDD):
-        Verificar que se permite la inscripción a una actividad
-        dentro del horario en el que el parque está abierto y la actividad está disponible.
+        Verifica que una inscripción exitosa funcione correctamente,
+        utilizando un mock para simular la base de datos.
         """
-        # === PRECONDICIONES ===
+        # 1. Arrange: Configure the mock to simulate a successful scenario.
+        # We tell the mock to return 'True' when these methods are called.
+        mock_repositorio.horario_existe.return_value = True
+        mock_repositorio.hay_cupo.return_value = True
+
         payload = {
             'actividad': 'Tirolesa',
             'cantidadPersonas': 1,
-            'horario': '10:00 GMT-3',  
-            'personas': [
-                {
-                    'nombre': 'Valeria',
-                    'tallaVestimenta': 'S',
-                    'edad': 30,
-                    'DNI': '39123456'
-                }
-            ],
+            'horario': '10:00 GMT-3',
+            'personas': [{
+                'nombre': 'Test User',
+                'tallaVestimenta': 'L',
+                'edad': 25,
+                'DNI': '12345678'
+            }],
             'aceptoTerminosYCondiciones': True
         }
 
-        # === ACT ===
-        try:
-            resultado = inscribirse_a_actividad(payload)
-        except NotImplementedError:
-            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
-
-        # === ASSERT ===
-        self.assertIsInstance(
-            resultado, str,
-            "La función debe devolver un string con formato JSON"
-        )
-
-        try:
-            parsed = json.loads(resultado)
-        except json.JSONDecodeError:
-            self.fail("La respuesta no tiene un formato JSON válido")
-
-        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
-        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
-
-        self.assertTrue(
-            parsed['exito'],
-            f"La inscripción debería haber sido exitosa. Mensaje: {parsed.get('mensaje')}"
-        ) # "Se permitió la inscripción fuera del horario permitido"
-
-        self.assertEqual(
-            parsed['mensaje'],
-             "Inscripción exitosa",
-            "El mensaje de éxito no coincide con lo esperado"
-        )
-
-        self.assertIn('idInscripcion', parsed, "El resultado debe incluir la clave 'idInscripcion'")
-
-        self.assertIsNotNone(
-            parsed['idInscripcion'],
-            "Debería generarse un 'idInscripcion' en una inscripción exitosa"
-        )
-                  
-    def _assert_inscripcion_falla(self, payload, expected_error_message):
-        """Método auxiliar para verificar que una inscripción falle con un mensaje específico."""
+        # 2. Act: Call the function. It will now use your mock_repositorio.
         resultado = inscribirse_a_actividad(payload)
-        try:
-            parsed = json.loads(resultado)
-        except json.JSONDecodeError:
-            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+        parsed = json.loads(resultado)
 
-        self.assertFalse(parsed.get('exito'), f"La inscripción debió fallar pero tuvo éxito. Payload: {payload}")
-        self.assertEqual(parsed.get('mensaje'), expected_error_message, f"Mensaje de error inesperado. Se recibió: {parsed.get('mensaje')}")
-        self.assertIsNone(parsed.get('idInscripcion'), f"No debería generarse idInscripcion si la inscripción falla. Payload: {payload}")
+        # 3. Assert: Verify the successful result.
+        self.assertTrue(parsed['exito'])
+        self.assertEqual(parsed['mensaje'], "Inscripción exitosa")
+        self.assertIsNotNone(parsed['idInscripcion'])
+
+        # 4. Verify database interactions: Check that the function
+        # tried to write to the database as expected.
+        mock_repositorio.agregar_inscripcion.assert_called_once()
+        mock_repositorio.descontar_cupo.assert_called_once_with(
+            'Tirolesa', '10:00 GMT-3', 1
+        )
+
 
     def test_inscribirse_actividad_horario_no_disponible(self):
         """
@@ -423,7 +400,7 @@ class TestInscripcionActividad(unittest.TestCase):
         mensaje_esperado = "El horario seleccionado no existe para la actividad indicada"
 
         # === ACT & ASSERT ===
-        self._assert_inscripcion_falla(payload, mensaje_esperado)
+        self._verificar_inscripcion_fallida(payload, mensaje_esperado)
 
 if __name__ == "__main__":
     unittest.main()

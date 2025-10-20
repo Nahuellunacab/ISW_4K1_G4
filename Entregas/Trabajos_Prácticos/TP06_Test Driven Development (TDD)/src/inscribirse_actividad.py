@@ -34,8 +34,8 @@ MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
 MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
+MSG_ERROR_EDAD_INVALIDA = "Edad debe ser un número válido"
 MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
-MSG_PASA_DENTRO_DE_HORARIO = "Inscripción dentro del horario permitido"
 MSG_ERROR_HORARIO_NO_EXISTE = "El horario seleccionado no existe para la actividad indicada"
 
 
@@ -285,7 +285,7 @@ def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
         
         # Validar que la edad sea un número válido
         if not isinstance(edad, (int, float)) or edad < 0:
-            return ResultadoInscripcion(False, "Edad debe ser un número válido")
+            return ResultadoInscripcion(False, MSG_ERROR_EDAD_INVALIDA)
             
         if edad < limite_edad:
             mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(limite=limite_edad)
