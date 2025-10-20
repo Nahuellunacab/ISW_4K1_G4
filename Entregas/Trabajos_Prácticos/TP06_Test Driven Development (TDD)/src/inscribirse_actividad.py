@@ -8,12 +8,19 @@ Como visitante QUIERO inscribirme a una actividad PARA reservar mi lugar en la m
 import json
 import sqlite3
 from typing import Dict, Any, List
+from datetime import datetime, time
 
 # =============================
 # Constantes de configuración
 # =============================
 ACTIVIDADES_CON_VESTIMENTA = ['Palestra', 'Tirolesa']
 TALLES_VALIDOS = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+
+# Horario del parque
+HORA_APERTURA_PARQUE = time(9, 0)
+HORA_CIERRE_PARQUE = time(19, 0)
+HORA_CIERRE_ACTIVIDADES = time(18, 0)
+# Actividades: de 9:00 a 18:00 hs, con turnos de 30 minutos
 
 # Límites de edad según Product Owner
 LIMITES_EDAD = {
@@ -27,6 +34,9 @@ MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
 MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
+MSG_ERROR_EDAD_INVALIDA = "Edad debe ser un número válido"
+MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
+MSG_ERROR_HORARIO_NO_EXISTE = "El horario seleccionado no existe para la actividad indicada"
 
 
 # =============================
@@ -126,6 +136,21 @@ class RepositorioActividadesSQLite:
             )
             conn.commit()
 
+    # Función para verificar si un horario existe para una actividad -> Test inscribirse horario no disponible
+
+    def horario_existe(self, actividad: str, horario: str) -> bool:
+        """Verifica si un horario específico existe para una actividad."""
+        query = """
+        SELECT 1
+        FROM horarios
+        JOIN actividades ON horarios.actividad_id = actividades.id
+        WHERE actividades.nombre = ? AND horarios.hora = ?
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(query, (actividad, horario))
+            return cur.fetchone() is not None
+
     # ========================================================
     # Operaciones de consulta y actualización de cupos
     # ========================================================
@@ -211,6 +236,14 @@ def _validar_talla_vestimenta(payload: Dict[str, Any]) -> ResultadoInscripcion:
             return ResultadoInscripcion(False, MSG_ERROR_TALLA_REQUERIDA)
     return None
 
+# funcion para validar si el horario existe para la actividad -> test inscribirse horario no disponible
+
+def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    actividad = payload.get('actividad')
+    horario = payload.get('horario')
+    if not repositorio.horario_existe(actividad, horario):
+        return ResultadoInscripcion(False, MSG_ERROR_HORARIO_NO_EXISTE)
+    return None
 
 def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
@@ -252,12 +285,31 @@ def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
         
         # Validar que la edad sea un número válido
         if not isinstance(edad, (int, float)) or edad < 0:
-            return ResultadoInscripcion(False, "Edad debe ser un número válido")
+            return ResultadoInscripcion(False, MSG_ERROR_EDAD_INVALIDA)
             
         if edad < limite_edad:
             mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(limite=limite_edad)
             return ResultadoInscripcion(False, mensaje_error)
     
+    return None
+
+
+def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """Valida que la inscripción se realice dentro del horario de apertura del parque."""
+    try:
+        horario_str = payload.get('horario', '').split(' ')[0]
+        if not horario_str:
+            # No se puede validar si no hay horario
+            return None
+        horario_inscripcion = datetime.strptime(horario_str, '%H:%M').time()
+    except ValueError:
+        # Si el formato es inválido, otra validación podría encargarse,
+        # pero es bueno ser robusto. De momento, lo ignoramos para este test.
+        return None
+
+    if not (HORA_APERTURA_PARQUE <= horario_inscripcion < HORA_CIERRE_ACTIVIDADES):
+        return ResultadoInscripcion(False, MSG_ERROR_FUERA_DE_HORARIO)
+
     return None
 
 
@@ -272,6 +324,8 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
         _validar_terminos_condiciones,
         _validar_talla_vestimenta,
         _validar_edad_minima,  # TDD GREEN: Agregar validación de edad
+        _validar_horario_parque,
+        _validar_horario_existente,
         _validar_cupo_disponible
     ]
 

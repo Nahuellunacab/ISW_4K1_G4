@@ -1,14 +1,55 @@
 import unittest
+from unittest.mock import patch
 import json
 import sys
 import os
 
 # Agregar el directorio src al path para importar el módulo
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '')))
 
-from inscribirse_actividad import inscribirse_a_actividad
+from src.inscribirse_actividad import inscribirse_a_actividad
 
 class TestInscripcionActividad(unittest.TestCase):
+    def _verificar_inscripcion_fallida(self, payload, mensaje_esperado):
+        """
+        Método auxiliar para verificar los casos de prueba de inscripciones fallidas.
+        """
+        # ACT
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # ASSERT
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertFalse(
+            parsed['exito'],
+            f"Se esperaba que la inscripción fallara, pero fue exitosa. Mensaje: {parsed.get('mensaje')}"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            mensaje_esperado,
+            "El mensaje de error no coincide con lo esperado"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
 
     # ============================================================
     # TEST 1: Sin aceptar Términos y Condiciones (FALLA)
@@ -74,8 +115,13 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba para rechazar la inscripción a la actividad por no aceptar términos y condiciones ha PASADO")
+        
+
     # ============================================================
-    # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
+    # TEST 3: Sin ingresar talle de vestimenta requerido (FALLA)
     # ============================================================
     # Refactorizado
 
@@ -197,7 +243,7 @@ class TestInscripcionActividad(unittest.TestCase):
 
 
     # ============================================================
-    # TEST 7: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
+    # TEST 4: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
     # ============================================================
     
     def test_inscribirse_con_edad_menor_al_limite_debe_fallar(self):
@@ -260,6 +306,10 @@ class TestInscripcionActividad(unittest.TestCase):
                 parsed['idInscripcion'],
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
 
 
 if __name__ == "__main__":
