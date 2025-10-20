@@ -200,6 +200,42 @@ class TestInscripcionActividad(unittest.TestCase):
             "Se permitió la inscripción pese a que no había cupo disponible"
         )
 
+    def test_inscribirse_actividad_horario_no_disponible(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que NO se permite la inscripción a una actividad en un
+        horario que no está disponible para la misma.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Safari',
+            'cantidadPersonas': 1,
+            'horario': '11:00 GMT-3',  # Horario NO existente para Safari
+            'personas': [
+                {
+                    'nombre': 'Juan',
+                    'edad': 30,
+                    'DNI': '30123456'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        resultado = inscribirse_a_actividad(payload)
+        parsed = json.loads(resultado)
+
+        # === ASSERT ===
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción en un horario no disponible"
+        )
+        self.assertEqual(
+            parsed['mensaje'],
+            "El horario seleccionado no existe para la actividad indicada",
+            f"El mensaje de error no es el esperado. Se recibió: {parsed['mensaje']}"
+        )
+
 if __name__ == "__main__":
     unittest.main()
     
