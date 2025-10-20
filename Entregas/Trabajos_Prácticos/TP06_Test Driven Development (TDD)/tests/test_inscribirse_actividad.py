@@ -200,6 +200,18 @@ class TestInscripcionActividad(unittest.TestCase):
             "Se permitió la inscripción pese a que no había cupo disponible"
         )
 
+    def _assert_inscripcion_falla(self, payload, expected_error_message):
+        """Método auxiliar para verificar que una inscripción falle con un mensaje específico."""
+        resultado = inscribirse_a_actividad(payload)
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail(f"La respuesta no es un JSON válido: {resultado}")
+
+        self.assertFalse(parsed.get('exito'), f"La inscripción debió fallar pero tuvo éxito. Payload: {payload}")
+        self.assertEqual(parsed.get('mensaje'), expected_error_message, f"Mensaje de error inesperado. Se recibió: {parsed.get('mensaje')}")
+        self.assertIsNone(parsed.get('idInscripcion'), f"No debería generarse idInscripcion si la inscripción falla. Payload: {payload}")
+
     def test_inscribirse_actividad_horario_no_disponible(self):
         """
         Caso de prueba (TDD):
@@ -220,21 +232,10 @@ class TestInscripcionActividad(unittest.TestCase):
             ],
             'aceptoTerminosYCondiciones': True
         }
+        mensaje_esperado = "El horario seleccionado no existe para la actividad indicada"
 
-        # === ACT ===
-        resultado = inscribirse_a_actividad(payload)
-        parsed = json.loads(resultado)
-
-        # === ASSERT ===
-        self.assertFalse(
-            parsed['exito'],
-            "Se permitió la inscripción en un horario no disponible"
-        )
-        self.assertEqual(
-            parsed['mensaje'],
-            "El horario seleccionado no existe para la actividad indicada",
-            f"El mensaje de error no es el esperado. Se recibió: {parsed['mensaje']}"
-        )
+        # === ACT & ASSERT ===
+        self._assert_inscripcion_falla(payload, mensaje_esperado)
 
 if __name__ == "__main__":
     unittest.main()
