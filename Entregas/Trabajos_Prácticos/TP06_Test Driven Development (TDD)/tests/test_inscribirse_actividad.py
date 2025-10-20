@@ -466,6 +466,41 @@ class TestInscripcionActividad(unittest.TestCase):
         # === ACT & ASSERT ===
         self._verificar_inscripcion_fallida(payload, mensaje_esperado)
 
+
+    # ============================================================================
+    # TEST Angel: Inscribirse sin talla de vestimenta cuando no es requerida(PASA)
+    # ============================================================================
+    
+    def test_inscribirse_sin_talla_vestimenta_cuando_no_es_requerida_debe_pasar(self):
+        """
+        Caso de prueba (TDD - GREEN):
+        Verificar que SÍ se permite la inscripción a una actividad
+        que no requiere vestimenta, aunque no se proporcione 'tallaVestimenta'.
+        """
+        payload = {
+            'actividad': 'Safari',  # No requiere vestimenta
+            'cantidadPersonas': 1,
+            'horario': '14:00 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Maria',
+                    # 'tallaVestimenta' intencionalmente omitido
+                    'edad': 35,
+                    'DNI': '30111222'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # ACT
+        resultado = inscribirse_a_actividad(payload)
+        parsed = json.loads(resultado)
+
+        # ASSERT
+        self.assertTrue(parsed['exito'], "La inscripción debería ser exitosa")
+        self.assertEqual(parsed['mensaje'], "Inscripción exitosa")
+        self.assertIsNotNone(parsed['idInscripcion'])
+    
 if __name__ == "__main__":
     unittest.main()
     
