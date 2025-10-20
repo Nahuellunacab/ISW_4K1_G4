@@ -15,9 +15,18 @@ from typing import Dict, Any, List
 ACTIVIDADES_CON_VESTIMENTA = ['Palestra', 'Tirolesa']
 TALLES_VALIDOS = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
+# Límites de edad según Product Owner
+LIMITES_EDAD = {
+    'Palestra': 12,
+    'Tirolesa': 8,
+    'Safari': 0,      # Sin límite
+    'Jardineria': 0   # Sin límite
+}
+
 MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
+MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad"
 
 
 # =============================
@@ -213,6 +222,27 @@ def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     return None
 
 
+def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que las personas cumplan con la edad mínima requerida por la actividad.
+    TDD FASE GREEN: Implementación mínima para pasar el test.
+    """
+    actividad = payload.get('actividad', '')
+    limite_edad = LIMITES_EDAD.get(actividad, 0)
+    
+    # Si no hay límite de edad, no validar
+    if limite_edad == 0:
+        return None
+    
+    personas = payload.get('personas', [])
+    for persona in personas:
+        edad = persona.get('edad', 0)
+        if edad < limite_edad:
+            return ResultadoInscripcion(False, MSG_ERROR_EDAD_INSUFICIENTE)
+    
+    return None
+
+
 # =============================
 # Lógica principal
 # =============================
@@ -223,6 +253,7 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     validaciones = [
         _validar_terminos_condiciones,
         _validar_talla_vestimenta,
+        _validar_edad_minima,  # TDD GREEN: Agregar validación de edad
         _validar_cupo_disponible
     ]
 
