@@ -115,10 +115,74 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
+
+    # ============================================================
+    # TEST 2: Sin aceptar Términos y Condiciones (PASA)
+    # ============================================================
+    def test_inscribirse_aceptando_terminos_debe_pasar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se permite la inscripción a una actividad
+        si 'aceptoTerminosYCondiciones' es True.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Palestra',
+            'cantidadPersonas': 1,
+            'horario': '09:30 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertTrue(
+            parsed['exito'],
+            "Se permitió la inscripción aceptando los Términos y Condiciones"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción exitosa",
+            "El mensaje no coincide con el esperado para una inscripción exitosa"
+        )
+
+        self.assertIn('idInscripcion', parsed, "Debe incluir la clave 'idInscripcion' en caso de éxito")
+        
+        self.assertIsNotNone( 
+        parsed['idInscripcion'],
+        "Se debe generar un 'idInscripcion' válido cuando la inscripción es exitosa"
+        )
+
         
 
     # ============================================================
-    # TEST 2: Sin ingresar talle de vestimenta requerido (FALLA)
+    # TEST 3: Sin ingresar talle de vestimenta requerido (FALLA)
     # ============================================================
     # Refactorizado
 
@@ -240,7 +304,7 @@ class TestInscripcionActividad(unittest.TestCase):
 
 
     # ============================================================
-    # TEST 7: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
+    # TEST 4: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
     # ============================================================
     
     def test_inscribirse_con_edad_menor_al_limite_debe_fallar(self):
