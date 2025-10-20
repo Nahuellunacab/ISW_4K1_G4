@@ -312,6 +312,286 @@ class TestInscripcionActividad(unittest.TestCase):
         print("- La prueba para rechazar inscripción por edad insuficiente ha PASADO")
 
 
+    # ============================================================
+    # TEST 4: Inscripción exitosa con todos los datos correctos (PASA)
+    # ============================================================
+    
+    def test_inscribirse_exitosamente_con_todos_los_datos_correctos(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se permite la inscripción cuando todos los datos
+        son válidos y hay cupo disponible.
+        Cubre: "Probar inscribirse a una actividad del listado que poseen cupos disponibles,
+        seleccionando un horario, ingresando los datos del visitante y aceptando términos (pasa)"
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',  
+            'cantidadPersonas': 1,
+            'horario': '11:00 GMT-3',  # Nuevo horario con 15 cupos disponibles
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',  # Talla proporcionada para actividad que lo requiere
+                    'edad': 21,  # Mayor a 8 años (límite de Tirolesa)
+                    'DNI': '44152639'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True  # Términos aceptados
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue exitosa ---
+        self.assertTrue(
+            parsed['exito'],
+            "La inscripción falló cuando debería haber sido exitosa"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción exitosa",
+            "El mensaje de éxito no coincide con lo esperado"
+        )
+
+        # --- Verifica que se generó un ID de inscripción ---
+        self.assertIn('idInscripcion', parsed, "Debe incluir 'idInscripcion' cuando la inscripción es exitosa")
+        self.assertIsNotNone(parsed['idInscripcion'], "El 'idInscripcion' no debe ser None")
+        self.assertNotEqual(parsed['idInscripcion'], "", "El 'idInscripcion' no debe estar vacío")
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba de inscripción exitosa ha PASADO")
+
+
+    # ============================================================
+    # TEST 5: Inscripción a actividad que NO requiere vestimenta (PASA)
+    # ============================================================
+    
+    def test_inscribirse_a_actividad_sin_requerir_vestimenta(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se puede inscribir a actividades que NO requieren
+        talla de vestimenta (Safari, Jardinería) sin proporcionar talla.
+        Cubre: "Probar inscribirse a una actividad sin ingresar talle de vestimenta 
+        porque la actividad no lo requiere (pasa)"
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Safari',  # NO requiere vestimenta
+            'cantidadPersonas': 1,
+            'horario': '14:00 GMT-3',  # Horario con cupo disponible
+            'personas': [
+                {
+                    'nombre': 'Maria',
+                    'tallaVestimenta': None,  # No se proporciona talla (no es necesaria)
+                    'edad': 25,
+                    'DNI': '40123456'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue exitosa ---
+        self.assertTrue(
+            parsed['exito'],
+            "No se permitió la inscripción a actividad que no requiere vestimenta"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción exitosa",
+            "El mensaje de éxito no coincide con lo esperado"
+        )
+
+        # --- Verifica que se generó un ID de inscripción ---
+        self.assertIn('idInscripcion', parsed, "Debe incluir 'idInscripcion' cuando la inscripción es exitosa")
+        self.assertIsNotNone(parsed['idInscripcion'], "El 'idInscripcion' no debe ser None")
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba de inscripción a actividad sin requerir vestimenta ha PASADO")
+
+
+    # ============================================================
+    # TEST 6: Inscripción en horario no disponible/parque cerrado (FALLA)
+    # ============================================================
+    
+    def test_inscribirse_en_horario_no_disponible_debe_fallar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que NO se permite la inscripción cuando se selecciona
+        un horario en el cual el parque está cerrado o la actividad no está disponible.
+        Cubre: "Probar inscribirse a una actividad seleccionando un horario en el cual 
+        el parque está cerrado o la actividad no está disponible (falla)"
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',
+            'cantidadPersonas': 1,
+            'horario': '22:00 GMT-3',  # Horario fuera del rango disponible (parque cerrado)
+            'personas': [
+                {
+                    'nombre': 'Carlos',
+                    'tallaVestimenta': 'L',
+                    'edad': 30,
+                    'DNI': '35987654'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue rechazada ---
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción en horario no disponible/parque cerrado"
+        )
+
+        # El mensaje puede ser sobre falta de cupo o horario no disponible
+        mensaje_lower = parsed['mensaje'].lower()
+        self.assertTrue(
+            "cupo" in mensaje_lower or "horario" in mensaje_lower or "disponible" in mensaje_lower,
+            f"El mensaje '{parsed['mensaje']}' debe mencionar la falta de disponibilidad"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
+
+
+    # ============================================================
+    # TEST 7: Inscripción con múltiples personas válidas (PASA)
+    # ============================================================
+    
+    def test_inscribirse_con_multiples_personas_validas(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se puede inscribir múltiples personas cuando todos 
+        los datos son válidos y hay cupo suficiente.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',  # Requiere vestimenta y edad mínima 8 años
+            'cantidadPersonas': 2,
+            'horario': '10:00 GMT-3',  # Horario con cupo disponible (ahora 10 cupos)
+            'personas': [
+                {
+                    'nombre': 'Ana',
+                    'tallaVestimenta': 'M',
+                    'edad': 25,
+                    'DNI': '30123456'
+                },
+                {
+                    'nombre': 'Pedro',
+                    'tallaVestimenta': 'L', 
+                    'edad': 18,
+                    'DNI': '31987654'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue exitosa ---
+        self.assertTrue(
+            parsed['exito'],
+            "La inscripción múltiple falló cuando debería haber sido exitosa"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción exitosa",
+            "El mensaje de éxito no coincide con lo esperado"
+        )
+
+        # --- Verifica que se generó un ID de inscripción ---
+        self.assertIn('idInscripcion', parsed, "Debe incluir 'idInscripcion' cuando la inscripción es exitosa")
+        self.assertIsNotNone(parsed['idInscripcion'], "El 'idInscripcion' no debe ser None")
+
+        # === RESULT ===
+        print(resultado)
+        print("- La prueba de inscripción múltiple exitosa ha PASADO")
+
+
 if __name__ == "__main__":
     unittest.main()
     
