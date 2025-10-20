@@ -74,9 +74,6 @@ class TestInscripcionActividad(unittest.TestCase):
                 "No debería generarse 'idInscripcion' cuando la inscripción falla"
             )
 
-        # === RESULT ===
-        print(resultado)
-        print("- La prueba para rechazar la inscripción a la actividad por no aceptar términos y condiciones ha PASADO")
         
 
     # ============================================================
@@ -200,6 +197,197 @@ class TestInscripcionActividad(unittest.TestCase):
             "Se permitió la inscripción pese a que no había cupo disponible"
         )
 
+
+    # ============================================================
+    # TEST 7: Inscripción con edad menor al límite requerido (FALLA) - TDD RED
+    # ============================================================
+    
+    def test_inscribirse_con_edad_menor_al_limite_debe_fallar(self):
+        """
+        Caso de prueba TDD - FASE RED:
+        Verificar que NO se permite la inscripción cuando la edad
+        de la persona es menor al límite requerido por la actividad.
+        Palestra: 12 años mínimo, Tirolesa: 8 años mínimo
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Palestra',  # Requiere 12 años mínimo
+            'cantidadPersonas': 1,
+            'horario': '09:30 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Niño',
+                    'tallaVestimenta': 'S',
+                    'edad': 10,  # MENOR AL LÍMITE DE 12 AÑOS
+                    'DNI': '99888777'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue rechazada por edad ---
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción con edad menor al límite requerido"
+        )
+
+        self.assertIn(
+            "edad",
+            parsed['mensaje'].lower(),
+            "El mensaje de error debe mencionar el problema de edad"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
+
+
+    # ============================================================
+    # Probar inscribirse a una actividad seleccionando un horario en el cual 
+    # el parque está cerrado o la actividad no está disponible (Falla)
+    # ============================================================
+    def test_inscribirse_fuera_de_horario_parque_y_actividad_abierto_debe_fallar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que NO se permite la inscripción a una actividad
+        si se intenta fuera del horario en el que el parque está abierto y la actividad no está disponible.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',
+            'cantidadPersonas': 1,
+            'horario': '22:30 GMT-3',  
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertFalse(
+            parsed['exito'],
+            "Se permitió la inscripción fuera del horario permitido"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción fuera del horario permitido",
+            "El mensaje de error no coincide con lo esperado"
+        )
+
+        if 'idInscripcion' in parsed:
+            self.assertIsNone(
+                parsed['idInscripcion'],
+                "No debería generarse 'idInscripcion' cuando la inscripción falla"
+            )
+
+
+    def test_inscribirse_dentro_de_horario_parque_y_actividad_abierto_debe_pasar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se permite la inscripción a una actividad
+        dentro del horario en el que el parque está abierto y la actividad está disponible.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Tirolesa',
+            'cantidadPersonas': 1,
+            'horario': '10:00 GMT-3',  
+            'personas': [
+                {
+                    'nombre': 'Valeria',
+                    'tallaVestimenta': 'S',
+                    'edad': 30,
+                    'DNI': '39123456'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        self.assertTrue(
+            parsed['exito'],
+            f"La inscripción debería haber sido exitosa. Mensaje: {parsed.get('mensaje')}"
+        ) # "Se permitió la inscripción fuera del horario permitido"
+
+        self.assertEqual(
+            parsed['mensaje'],
+             "Inscripción exitosa",
+            "El mensaje de éxito no coincide con lo esperado"
+        )
+
+        self.assertIn('idInscripcion', parsed, "El resultado debe incluir la clave 'idInscripcion'")
+
+        self.assertIsNotNone(
+            parsed['idInscripcion'],
+            "Debería generarse un 'idInscripcion' en una inscripción exitosa"
+        )
+                  
     def _assert_inscripcion_falla(self, payload, expected_error_message):
         """Método auxiliar para verificar que una inscripción falle con un mensaje específico."""
         resultado = inscribirse_a_actividad(payload)

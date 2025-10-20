@@ -8,6 +8,7 @@ Como visitante QUIERO inscribirme a una actividad PARA reservar mi lugar en la m
 import json
 import sqlite3
 from typing import Dict, Any, List
+from datetime import datetime, time
 
 # =============================
 # Constantes de configuración
@@ -15,9 +16,26 @@ from typing import Dict, Any, List
 ACTIVIDADES_CON_VESTIMENTA = ['Palestra', 'Tirolesa']
 TALLES_VALIDOS = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
+# Horario del parque
+HORA_APERTURA_PARQUE = time(9, 0)
+HORA_CIERRE_PARQUE = time(19, 0)
+HORA_CIERRE_ACTIVIDADES = time(18, 0)
+# Actividades: de 9:00 a 18:00 hs, con turnos de 30 minutos
+
+# Límites de edad según Product Owner
+LIMITES_EDAD = {
+    'Palestra': 12,
+    'Tirolesa': 8,
+    'Safari': 0,      # Sin límite
+    'Jardineria': 0   # Sin límite
+}
+
 MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
+MSG_ERROR_EDAD_INSUFICIENTE = "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
+MSG_ERROR_FUERA_DE_HORARIO = "Inscripción fuera del horario permitido"
+MSG_PASA_DENTRO_DE_HORARIO = "Inscripción dentro del horario permitido"
 MSG_ERROR_HORARIO_NO_EXISTE = "El horario seleccionado no existe para la actividad indicada"
 
 
@@ -237,6 +255,64 @@ def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     return None
 
 
+def _validar_edad_minima(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que las personas cumplan con la edad mínima requerida por la actividad.
+    
+    TDD FASE REFACTOR: Mejoras en validación y mensajes de error.
+    
+    Límites según Product Owner:
+    - Palestra: 12 años mínimo
+    - Tirolesa: 8 años mínimo  
+    - Safari y Jardinería: sin límite de edad
+    
+    Args:
+        payload: Datos de la inscripción
+        
+    Returns:
+        ResultadoInscripcion con error si hay personas menores al límite, None si todo está bien
+    """
+    actividad = payload.get('actividad', '')
+    limite_edad = LIMITES_EDAD.get(actividad, 0)
+    
+    # Si no hay límite de edad, no validar
+    if limite_edad == 0:
+        return None
+    
+    personas = payload.get('personas', [])
+    for persona in personas:
+        edad = persona.get('edad')
+        
+        # Validar que la edad sea un número válido
+        if not isinstance(edad, (int, float)) or edad < 0:
+            return ResultadoInscripcion(False, "Edad debe ser un número válido")
+            
+        if edad < limite_edad:
+            mensaje_error = MSG_ERROR_EDAD_INSUFICIENTE.format(limite=limite_edad)
+            return ResultadoInscripcion(False, mensaje_error)
+    
+    return None
+
+
+def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """Valida que la inscripción se realice dentro del horario de apertura del parque."""
+    try:
+        horario_str = payload.get('horario', '').split(' ')[0]
+        if not horario_str:
+            # No se puede validar si no hay horario
+            return None
+        horario_inscripcion = datetime.strptime(horario_str, '%H:%M').time()
+    except ValueError:
+        # Si el formato es inválido, otra validación podría encargarse,
+        # pero es bueno ser robusto. De momento, lo ignoramos para este test.
+        return None
+
+    if not (HORA_APERTURA_PARQUE <= horario_inscripcion < HORA_CIERRE_ACTIVIDADES):
+        return ResultadoInscripcion(False, MSG_ERROR_FUERA_DE_HORARIO)
+
+    return None
+
+
 # =============================
 # Lógica principal
 # =============================
@@ -247,6 +323,8 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     validaciones = [
         _validar_terminos_condiciones,
         _validar_talla_vestimenta,
+        _validar_edad_minima,  # TDD GREEN: Agregar validación de edad
+        _validar_horario_parque,
         _validar_horario_existente,
         _validar_cupo_disponible
     ]
