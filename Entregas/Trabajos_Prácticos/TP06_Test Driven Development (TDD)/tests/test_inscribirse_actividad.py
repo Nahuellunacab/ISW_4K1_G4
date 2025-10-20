@@ -466,6 +466,72 @@ class TestInscripcionActividad(unittest.TestCase):
         # === ACT & ASSERT ===
         self._verificar_inscripcion_fallida(payload, mensaje_esperado)
 
+    # ============================================================
+    # TEST 8: Ingresando Talla Vestimenta (PASA) - TDD RED
+    # ============================================================
+    
+    def test_inscribirse_ingresando_talla_vestimenta_debe_pasar(self):
+        """
+        Caso de prueba (TDD):
+        Verificar que se permite la inscripción a una actividad
+        si se ingresa la 'tallaVestimenta' correctamente para todas las personas.
+        """
+        # === PRECONDICIONES ===
+        payload = {
+            'actividad': 'Palestra',
+            'cantidadPersonas': 1,
+            'horario': '09:30 GMT-3',
+            'personas': [
+                {
+                    'nombre': 'Julian',
+                    'tallaVestimenta': 'M',
+                    'edad': 21,
+                    'DNI': '44152639'
+                }
+            ],
+            'aceptoTerminosYCondiciones': True
+        }
+
+        # === ACT ===
+        try:
+            resultado = inscribirse_a_actividad(payload)
+        except NotImplementedError:
+            self.skipTest("Implementar 'inscribirse_a_actividad' para correr este test")
+
+        # === ASSERT ===
+        self.assertIsInstance(
+            resultado, str,
+            "La función debe devolver un string con formato JSON"
+        )
+
+        try:
+            parsed = json.loads(resultado)
+        except json.JSONDecodeError:
+            self.fail("La respuesta no tiene un formato JSON válido")
+
+        self.assertIn('exito', parsed, "El resultado debe incluir la clave 'exito'")
+        self.assertIn('mensaje', parsed, "El resultado debe incluir la clave 'mensaje'")
+
+        # --- Verifica que la inscripción fue exitosa ---
+        self.assertTrue(
+            parsed['exito'],
+            "No se permitió la inscripción pese a ingresar correctamente la talla de vestimenta"
+        )
+
+        self.assertEqual(
+            parsed['mensaje'],
+            "Inscripción exitosa",
+            "El mensaje no coincide con el esperado para una inscripción exitosa"
+        )
+
+        # --- Verifica que se haya generado un ID de inscripción válido ---
+        self.assertIn('idInscripcion', parsed, "Debe incluir la clave 'idInscripcion' en caso de éxito")
+        
+        self.assertIsNotNone(
+            parsed['idInscripcion'],
+            "Se debe generar un 'idInscripcion' válido cuando la inscripción es exitosa"
+        )
+
 if __name__ == "__main__":
     unittest.main()
     
