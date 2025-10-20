@@ -8,7 +8,7 @@ Este repositorio pertenece al grupo 4 de la materia de Ingeniería y Calidad de 
 - [Espósito, Nicolás - 90203](https://github.com/NicolasEsposito10)
 - [Fernandez, Pablo - 95695](https://github.com/FernandezPabloGabriel)
 - [Luna, Ángel Nahuel - 89627](https://github.com/Nahuellunacab)
-- [Longo Prudencio, Máximo - 97101]()
+- [Longo Prudencio, Máximo - 97101](https://github.com/MaximoLongo)
 - [Patolsky, Daniel - 92847](https://github.com/DanielPatolsky)
 - [Titón, Máximo - 98175](https://github.com/maxiTiton)
 - [Uliana, Agustín - 97828](https://github.com/AgustinUliana97828)
