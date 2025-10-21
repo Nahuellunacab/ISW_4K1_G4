@@ -89,7 +89,8 @@ class RepositorioActividadesSQLite:
                     actividad_id INTEGER NOT NULL,
                     hora TEXT NOT NULL,
                     cupos_disponibles INTEGER NOT NULL,
-                    FOREIGN KEY (actividad_id) REFERENCES actividades(id)
+                    FOREIGN KEY (actividad_id) REFERENCES actividades(id),
+                    UNIQUE(actividad_id, hora)
                 );
 
                 CREATE TABLE IF NOT EXISTS inscripciones (
@@ -123,22 +124,27 @@ class RepositorioActividadesSQLite:
                 ]
             )
 
-            # Horarios y cupos
-            cur.executemany(
-                """
-                INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles)
-                VALUES (
-                    (SELECT id FROM actividades WHERE nombre = ?),
-                    ?, ?
+            # Horarios y cupos - Ahora con UNIQUE constraint
+            # INSERT OR IGNORE evitará duplicados gracias a UNIQUE(actividad_id, hora)
+            horarios_iniciales = [
+                ('Tirolesa', '10:00 GMT-3', 10),
+                ('Palestra', '09:30 GMT-3', 12),
+                ('Safari', '14:00 GMT-3', 8),
+                ('Jardineria', '10:30 GMT-3', 12),
+            ]
+            
+            for actividad_nombre, hora, cupos in horarios_iniciales:
+                cur.execute(
+                    """
+                    INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles)
+                    VALUES (
+                        (SELECT id FROM actividades WHERE nombre = ?),
+                        ?, ?
+                    )
+                    """,
+                    (actividad_nombre, hora, cupos)
                 )
-                """,
-                [
-                    ('Tirolesa', '10:00 GMT-3', 10),
-                    ('Palestra', '09:30 GMT-3', 12),
-                    ('Safari', '14:00 GMT-3', 8),
-                    ('Jardineria', '10:30 GMT-3', 12),
-                ]
-            )
+            
             conn.commit()
 
     # Función para verificar si un horario existe para una actividad
@@ -215,6 +221,57 @@ class RepositorioActividadesSQLite:
                 persona.get("DNI")
             ))
             conn.commit()
+
+    def obtener_todas_actividades(self) -> List[Dict[str, Any]]:
+        """
+        Obtiene todas las actividades disponibles.
+
+        Returns:
+            Lista de actividades con sus propiedades
+        """
+        query = """
+        SELECT nombre, requiere_vestimenta
+        FROM actividades
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(query)
+            rows = cur.fetchall()
+            return [
+                {
+                    'nombre': row[0],
+                    'requiereVestimenta': bool(row[1])
+                }
+                for row in rows
+            ]
+
+    def obtener_horarios_actividad(self, actividad: str) -> List[Dict[str, Any]]:
+        """
+        Obtiene todos los horarios disponibles para una actividad.
+
+        Args:
+            actividad: Nombre de la actividad
+
+        Returns:
+            Lista de horarios con cupos disponibles
+        """
+        query = """
+        SELECT h.hora, h.cupos_disponibles
+        FROM horarios h
+        JOIN actividades a ON h.actividad_id = a.id
+        WHERE a.nombre = ?
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(query, (actividad,))
+            rows = cur.fetchall()
+            return [
+                {
+                    'horario': row[0],
+                    'cuposDisponibles': row[1]
+                }
+                for row in rows
+            ]
 
 
 # Instancia global del repositorio (simula la conexión al "sistema")
