@@ -55,6 +55,7 @@
   border-radius: 8px;
   margin-bottom: 1.5rem;
   font-weight: 500;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .mensaje-exito {
@@ -118,22 +119,33 @@
   cursor: not-allowed;
 }
 
+.helper-text {
+  display: block;
+  margin-top: 0.5rem;
+  color: #3DA35D;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .resumen {
   background: #f8f9fa;
   padding: 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .resumen-item {
   margin-bottom: 0.75rem;
   font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .resumen-item strong {
   color: #3E8914;
   margin-right: 0.5rem;
   font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .terminos-section {

@@ -4,6 +4,7 @@
   border-radius: 8px;
   margin-bottom: 1.5rem;
   border: 2px solid #e9ecef;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .persona-form h4 {
@@ -11,6 +12,15 @@
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.helper-text-dni {
+  display: block;
+  margin-top: 0.25rem;
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
 }
 
 .form-row {

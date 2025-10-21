@@ -32,14 +32,16 @@ function InscripcionForm({ onVolver }) {
   }, [actividadSeleccionada]);
 
   useEffect(() => {
-    const nuevasPersonas = Array.from({ length: cantidadPersonas }, (_, i) => ({
-      id: i + 1,
-      nombre: personas[i]?.nombre || '',
-      tallaVestimenta: personas[i]?.tallaVestimenta || '',
-      edad: personas[i]?.edad || '',
-      DNI: personas[i]?.DNI || '',
-    }));
-    setPersonas(nuevasPersonas);
+    setPersonas((prevPersonas) => {
+      const nuevasPersonas = Array.from({ length: cantidadPersonas }, (_, i) => ({
+        id: i + 1,
+        nombre: prevPersonas[i]?.nombre || '',
+        tallaVestimenta: prevPersonas[i]?.tallaVestimenta || '',
+        edad: prevPersonas[i]?.edad || '',
+        DNI: prevPersonas[i]?.DNI || '',
+      }));
+      return nuevasPersonas;
+    });
   }, [cantidadPersonas]);
 
   const cargarActividades = async () => {
@@ -181,13 +183,38 @@ function InscripcionForm({ onVolver }) {
     return actividad?.requiereVestimenta || false;
   };
 
+  const obtenerCuposDisponibles = () => {
+    const horario = horarios.find((h) => h.horario === horarioSeleccionado);
+    return horario?.cuposDisponibles || 0;
+  };
+
   const avanzarPaso = () => {
-    if (paso === 1 && (!actividadSeleccionada || !horarioSeleccionado)) {
-      setMensaje({
-        tipo: 'error',
-        texto: 'Seleccione actividad y horario',
-      });
-      return;
+    if (paso === 1) {
+      if (!actividadSeleccionada || !horarioSeleccionado) {
+        setMensaje({
+          tipo: 'error',
+          texto: 'Seleccione actividad y horario',
+        });
+        return;
+      }
+
+      // Validar cantidad de personas
+      if (!cantidadPersonas || cantidadPersonas === 0) {
+        setMensaje({
+          tipo: 'error',
+          texto: 'Debe ingresar al menos 1 persona',
+        });
+        return;
+      }
+
+      const cuposDisponibles = obtenerCuposDisponibles();
+      if (cantidadPersonas > cuposDisponibles) {
+        setMensaje({
+          tipo: 'error',
+          texto: `No hay suficientes cupos. Disponibles: ${cuposDisponibles}`,
+        });
+        return;
+      }
     }
     setPaso(paso + 1);
     setMensaje(null);
@@ -279,11 +306,22 @@ function InscripcionForm({ onVolver }) {
                   id="cantidadPersonas"
                   type="number"
                   min="1"
-                  max="10"
+                  max={horarioSeleccionado ? obtenerCuposDisponibles() : 10}
                   value={cantidadPersonas}
-                  onChange={(e) => setCantidadPersonas(parseInt(e.target.value, 10))}
+                  onChange={(e) => {
+                    const valor = parseInt(e.target.value, 10);
+                    if (valor >= 1) {
+                      setCantidadPersonas(valor);
+                    }
+                  }}
+                  disabled={!horarioSeleccionado}
                   required
                 />
+                {horarioSeleccionado && (
+                  <small className="helper-text">
+                    Cupos disponibles: {obtenerCuposDisponibles()}
+                  </small>
+                )}
               </label>
             </div>
 

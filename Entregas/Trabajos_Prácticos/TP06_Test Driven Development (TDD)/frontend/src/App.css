@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .app-header {
@@ -18,12 +19,14 @@
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .app-header p {
   color: #666;
   font-size: 1.1rem;
   font-weight: 500;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .app-main {
@@ -43,6 +46,7 @@
   color: #333;
   margin-bottom: 1rem;
   font-size: 2rem;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .welcome-section p {
@@ -50,6 +54,7 @@
   font-size: 1.2rem;
   margin-bottom: 2rem;
   line-height: 1.6;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-primary {
@@ -62,6 +67,7 @@
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .btn-primary:hover {

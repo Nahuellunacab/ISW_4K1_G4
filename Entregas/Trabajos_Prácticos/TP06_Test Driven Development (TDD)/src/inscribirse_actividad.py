@@ -34,6 +34,11 @@ LIMITES_EDAD = {
 MSG_ERROR_TERMINOS = "Debe aceptar Términos y Condiciones"
 MSG_ERROR_TALLA_REQUERIDA = "La actividad requiere talla de vestimenta"
 MSG_ERROR_SIN_CUPO = "No hay cupos disponibles para el horario seleccionado"
+MSG_ERROR_CANTIDAD_INVALIDA = "La cantidad de personas debe ser al menos 1"
+MSG_ERROR_EXCEDE_CUPOS = "La cantidad de personas excede los cupos disponibles"
+MSG_ERROR_NOMBRE_INVALIDO = "El nombre solo puede contener letras, espacios y guiones"
+MSG_ERROR_DNI_INVALIDO = "El DNI debe contener solo números y tener entre 6 y 10 dígitos"
+MSG_ERROR_EDAD_CERO = "La edad debe ser mayor a 0"
 MSG_ERROR_EDAD_INSUFICIENTE = (
     "Edad insuficiente para la actividad. Mínimo requerido: {limite} años"
 )
@@ -361,14 +366,67 @@ def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
     return None
 
 
+def _validar_cantidad_personas(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que la cantidad de personas sea válida (mayor a 0).
+    """
+    cantidad = payload.get('cantidadPersonas', 0)
+    
+    if not isinstance(cantidad, int) or cantidad < 1:
+        return ResultadoInscripcion(False, MSG_ERROR_CANTIDAD_INVALIDA)
+    
+    return None
+
+
 def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
     horario = payload.get('horario')
     cantidad = payload.get('cantidadPersonas', 1)
 
     repo = get_repositorio()
+    cupos_disponibles = repo.obtener_cupos(actividad, horario)
+    
+    if cantidad > cupos_disponibles:
+        return ResultadoInscripcion(
+            False, 
+            f"{MSG_ERROR_EXCEDE_CUPOS}. Disponibles: {cupos_disponibles}"
+        )
+    
     if not repo.hay_cupo(actividad, horario, cantidad):
         return ResultadoInscripcion(False, MSG_ERROR_SIN_CUPO)
+    return None
+
+
+def _validar_datos_personas(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que los datos de las personas sean correctos:
+    - Nombre: solo letras, espacios y guiones
+    - DNI: solo números, entre 6 y 10 dígitos
+    - Edad: mayor a 0
+    """
+    import re
+    
+    personas = payload.get('personas', [])
+    
+    for persona in personas:
+        # Validar nombre (solo letras, espacios, guiones y acentos)
+        nombre = persona.get('nombre', '')
+        if not nombre or not re.match(r'^[A-Za-zÀ-ÿ\s\-\']+$', nombre):
+            return ResultadoInscripcion(False, MSG_ERROR_NOMBRE_INVALIDO)
+        
+        # Validar DNI (solo números, entre 6 y 10 dígitos)
+        dni = str(persona.get('DNI', ''))
+        if not dni or not re.match(r'^\d{6,10}$', dni):
+            return ResultadoInscripcion(False, MSG_ERROR_DNI_INVALIDO)
+        
+        # Validar edad (mayor a 0)
+        edad = persona.get('edad')
+        if not isinstance(edad, (int, float)):
+            return ResultadoInscripcion(False, MSG_ERROR_EDAD_INVALIDA)
+        
+        if edad <= 0:
+            return ResultadoInscripcion(False, MSG_ERROR_EDAD_CERO)
+    
     return None
 
 
@@ -448,10 +506,12 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     """
     validaciones = [
         _validar_terminos_condiciones,
+        _validar_datos_personas,
         _validar_talla_vestimenta,
         _validar_edad_minima,
         _validar_horario_parque,
         _validar_horario_existente,
+        _validar_cantidad_personas,
         _validar_cupo_disponible
     ]
 
