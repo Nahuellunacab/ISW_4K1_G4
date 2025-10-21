@@ -294,7 +294,7 @@ class TestInscripcionActividad(unittest.TestCase):
         payload = {
             'actividad': 'Tirolesa',
             'cantidadPersonas': 1,
-            'horario': '11:00 GMT-3',  # Horario con cupos disponibles
+            'horario': '10:00 GMT-3',  # Horario con cupos disponibles
             'personas': [
                 {
                     'nombre': 'Julian',
@@ -366,9 +366,9 @@ class TestInscripcionActividad(unittest.TestCase):
         """
         # === PRECONDICIONES ===
         payload = {
-            'actividad': 'Safari',  # NO requiere vestimenta
+            'actividad': 'Jardineria',  # NO requiere vestimenta
             'cantidadPersonas': 1,
-            'horario': '14:00 GMT-3',  # Horario con cupo disponible
+            'horario': '10:30 GMT-3',  # Horario con cupo disponible
             'personas': [
                 {
                     'nombre': 'Maria',
