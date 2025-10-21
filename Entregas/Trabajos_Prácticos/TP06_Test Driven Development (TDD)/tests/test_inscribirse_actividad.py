@@ -485,20 +485,26 @@ class TestInscripcionActividad(unittest.TestCase):
     def test_inscribirse_con_multiples_personas_validas(self):
         """
         Caso de prueba (TDD):
-        Verificar que se puede inscribir una persona cuando todos 
+        Verificar que se puede inscribir múltiples personas cuando todos 
         los datos son válidos y hay cupo suficiente.
         """
         # === PRECONDICIONES ===
         payload = {
-            'actividad': 'Jardineria',  # NO requiere vestimenta y tiene 12 cupos
-            'cantidadPersonas': 1,  # Una sola persona
-            'horario': '10:30 GMT-3',  # Horario con cupo disponible
+            'actividad': 'Safari',  # NO requiere vestimenta y tiene 8 cupos
+            'cantidadPersonas': 2,  # Múltiples personas
+            'horario': '14:00 GMT-3',  # Horario con cupo disponible
             'personas': [
                 {
-                    'nombre': 'Ana',
+                    'nombre': 'Julian',
                     'tallaVestimenta': None,  # No requiere talla
-                    'edad': 25,
+                    'edad': 21,
                     'DNI': '30123456'
+                },
+                {
+                    'nombre': 'Angel',
+                    'tallaVestimenta': None,  # No requiere talla
+                    'edad': 22,
+                    'DNI': '31987654'
                 }
             ],
             'aceptoTerminosYCondiciones': True
