@@ -4,6 +4,7 @@ import {
   obtenerHorarios,
   crearInscripcion,
 } from '../services/api';
+import { TERMINOS_Y_CONDICIONES } from '../constants/terminos';
 import PersonaForm from './PersonaForm';
 import './InscripcionForm.css';
 
@@ -15,6 +16,7 @@ function InscripcionForm({ onVolver }) {
   const [cantidadPersonas, setCantidadPersonas] = useState(1);
   const [personas, setPersonas] = useState([]);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
+  const [mostrarTerminos, setMostrarTerminos] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [paso, setPaso] = useState(1);
@@ -341,18 +343,42 @@ function InscripcionForm({ onVolver }) {
               </div>
             </div>
 
-            <div className="form-group terminos">
-              <label htmlFor="terminos">
-                <input
-                  id="terminos"
-                  type="checkbox"
-                  checked={aceptoTerminos}
-                  onChange={(e) => setAceptoTerminos(e.target.checked)}
-                  required
-                />
+            <div className="terminos-section">
+              <button
+                type="button"
+                className="btn-ver-terminos"
+                onClick={() => setMostrarTerminos(!mostrarTerminos)}
+              >
+                {mostrarTerminos ? '▼' : '▶'}
                 {' '}
-                Acepto los términos y condiciones *
-              </label>
+                Ver Términos y Condiciones
+              </button>
+
+              {mostrarTerminos && (
+                <div className="terminos-contenido">
+                  <pre>{TERMINOS_Y_CONDICIONES}</pre>
+                </div>
+              )}
+
+              <div className="form-group terminos-checkbox">
+                <label htmlFor="terminos">
+                  <input
+                    id="terminos"
+                    type="checkbox"
+                    checked={aceptoTerminos}
+                    onChange={(e) => setAceptoTerminos(e.target.checked)}
+                    required
+                  />
+                  {' '}
+                  <span>
+                    He leído y acepto los
+                    {' '}
+                    <strong>Términos y Condiciones</strong>
+                    {' '}
+                    *
+                  </span>
+                </label>
+              </div>
             </div>
 
             <div className="form-actions">
@@ -362,7 +388,7 @@ function InscripcionForm({ onVolver }) {
               <button
                 type="submit"
                 className="btn-confirmar"
-                disabled={cargando}
+                disabled={cargando || !aceptoTerminos}
               >
                 {cargando ? 'Procesando...' : 'Confirmar Inscripción'}
               </button>

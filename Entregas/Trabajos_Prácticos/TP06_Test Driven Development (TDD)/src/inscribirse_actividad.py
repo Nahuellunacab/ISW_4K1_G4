@@ -6,6 +6,7 @@ Como visitante QUIERO inscribirme a una actividad PARA reservar mi lugar en la m
 """
 
 import json
+import os
 import sqlite3
 from typing import Dict, Any, List
 from datetime import datetime, time
@@ -69,12 +70,31 @@ class ResultadoInscripcion:
 class RepositorioActividadesSQLite:
     """Capa de acceso a datos para actividades, horarios e inscripciones."""
 
-    def __init__(self, db_path="actividades.db"):
+    def __init__(self, db_path=None):
+        """
+        Inicializa el repositorio con una ruta de base de datos.
+        
+        Args:
+            db_path: Ruta a la base de datos. Si es None, usa una ubicación
+                     centralizada en el directorio raíz del proyecto.
+        """
+        if db_path is None:
+            # Usar ruta absoluta al directorio raíz del proyecto
+            project_root = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), '..')
+            )
+            db_path = os.path.join(project_root, 'actividades.db')
+        
         self.db_path = db_path
+        self._inicializar_base_datos()
+
+    def _inicializar_base_datos(self):
+        """Inicializa la base de datos creando tablas y datos iniciales."""
         self._crear_tablas()
         self._precargar_datos_iniciales()
 
     def _crear_tablas(self):
+        """Crea las tablas si no existen."""
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             cur.executescript("""
@@ -89,6 +109,7 @@ class RepositorioActividadesSQLite:
                     actividad_id INTEGER NOT NULL,
                     hora TEXT NOT NULL,
                     cupos_disponibles INTEGER NOT NULL,
+                    cupos_iniciales INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (actividad_id) REFERENCES actividades(id),
                     UNIQUE(actividad_id, hora)
                 );
@@ -101,6 +122,7 @@ class RepositorioActividadesSQLite:
                     talla_vestimenta TEXT,
                     edad INTEGER,
                     dni TEXT,
+                    fecha_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (actividad_id) REFERENCES actividades(id),
                     FOREIGN KEY (horario_id) REFERENCES horarios(id)
                 );
@@ -108,24 +130,30 @@ class RepositorioActividadesSQLite:
             conn.commit()
 
     def _precargar_datos_iniciales(self):
-        """Carga los mismos datos hardcodeados del sistema original."""
+        """
+        Carga los datos iniciales del sistema solo si no existen.
+        
+        Este método solo inserta datos si no están presentes,
+        sin resetear ni modificar datos existentes.
+        """
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
 
-            # Actividades base
-            cur.executemany(
-                ("INSERT OR IGNORE INTO actividades "
-                 "(nombre, requiere_vestimenta) VALUES (?, ?)"),
-                [
-                    ('Tirolesa', 1),
-                    ('Palestra', 1),
-                    ('Safari', 0),
-                    ('Jardineria', 0)
-                ]
-            )
+            # Actividades base - Solo insertar si no existen
+            actividades = [
+                ('Tirolesa', 1),
+                ('Palestra', 1),
+                ('Safari', 0),
+                ('Jardineria', 0)
+            ]
+            
+            for nombre, requiere in actividades:
+                cur.execute(
+                    "INSERT OR IGNORE INTO actividades (nombre, requiere_vestimenta) VALUES (?, ?)",
+                    (nombre, requiere)
+                )
 
-            # Horarios y cupos - Ahora con UNIQUE constraint
-            # INSERT OR IGNORE evitará duplicados gracias a UNIQUE(actividad_id, hora)
+            # Horarios con cupos iniciales - Solo insertar si no existen
             horarios_iniciales = [
                 ('Tirolesa', '10:00 GMT-3', 10),
                 ('Palestra', '09:30 GMT-3', 12),
@@ -134,15 +162,16 @@ class RepositorioActividadesSQLite:
             ]
             
             for actividad_nombre, hora, cupos in horarios_iniciales:
+                # Insertar solo si no existe (gracias a UNIQUE constraint)
                 cur.execute(
                     """
-                    INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles)
+                    INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles, cupos_iniciales)
                     VALUES (
                         (SELECT id FROM actividades WHERE nombre = ?),
-                        ?, ?
+                        ?, ?, ?
                     )
                     """,
-                    (actividad_nombre, hora, cupos)
+                    (actividad_nombre, hora, cupos, cupos)
                 )
             
             conn.commit()
@@ -200,7 +229,13 @@ class RepositorioActividadesSQLite:
 
     def agregar_inscripcion(
         self, actividad: str, horario: str, persona: Dict[str, Any]
-    ):
+    ) -> int:
+        """
+        Agrega una inscripción a la base de datos.
+        
+        Returns:
+            ID de la inscripción creada
+        """
         query = """
         INSERT INTO inscripciones (actividad_id, horario_id, nombre_persona, talla_vestimenta, edad, dni)
         VALUES (
@@ -221,6 +256,7 @@ class RepositorioActividadesSQLite:
                 persona.get("DNI")
             ))
             conn.commit()
+            return cur.lastrowid
 
     def obtener_todas_actividades(self) -> List[Dict[str, Any]]:
         """
@@ -274,8 +310,20 @@ class RepositorioActividadesSQLite:
             ]
 
 
-# Instancia global del repositorio (simula la conexión al "sistema")
-repositorio = RepositorioActividadesSQLite()
+# Instancia global del repositorio (inicialización lazy para evitar problemas con tests)
+_repositorio_instance = None
+
+def get_repositorio():
+    """
+    Obtiene la instancia del repositorio usando patrón Singleton lazy.
+    
+    Esto permite que los tests limpien la base de datos antes de que
+    se inicialice el repositorio.
+    """
+    global _repositorio_instance
+    if _repositorio_instance is None:
+        _repositorio_instance = RepositorioActividadesSQLite()
+    return _repositorio_instance
 
 
 # =============================
@@ -307,7 +355,8 @@ def _validar_talla_vestimenta(payload: Dict[str, Any]) -> ResultadoInscripcion:
 def _validar_horario_existente(payload: Dict[str, Any]) -> ResultadoInscripcion:
     actividad = payload.get('actividad')
     horario = payload.get('horario')
-    if not repositorio.horario_existe(actividad, horario):
+    repo = get_repositorio()
+    if not repo.horario_existe(actividad, horario):
         return ResultadoInscripcion(False, MSG_ERROR_HORARIO_NO_EXISTE)
     return None
 
@@ -317,7 +366,8 @@ def _validar_cupo_disponible(payload: Dict[str, Any]) -> ResultadoInscripcion:
     horario = payload.get('horario')
     cantidad = payload.get('cantidadPersonas', 1)
 
-    if not repositorio.hay_cupo(actividad, horario, cantidad):
+    repo = get_repositorio()
+    if not repo.hay_cupo(actividad, horario, cantidad):
         return ResultadoInscripcion(False, MSG_ERROR_SIN_CUPO)
     return None
 
@@ -392,11 +442,14 @@ def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
 def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
     """
     Procesa la inscripción a una actividad del parque.
+    
+    Returns:
+        JSON string con el resultado de la inscripción
     """
     validaciones = [
         _validar_terminos_condiciones,
         _validar_talla_vestimenta,
-        _validar_edad_minima,  # TDD GREEN: Agregar validación de edad
+        _validar_edad_minima,
         _validar_horario_parque,
         _validar_horario_existente,
         _validar_cupo_disponible
@@ -407,18 +460,28 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
         if error:
             return error.to_json()
 
-    # Registrar inscripción y descontar cupos
+    # Obtener instancia del repositorio
+    repo = get_repositorio()
+
+    # Registrar inscripciones y obtener IDs
+    ids_inscripciones = []
     for persona in payload.get("personas", []):
-        repositorio.agregar_inscripcion(
+        id_inscripcion = repo.agregar_inscripcion(
             payload["actividad"], payload["horario"], persona
         )
-    repositorio.descontar_cupo(
+        ids_inscripciones.append(id_inscripcion)
+    
+    # Descontar cupos
+    repo.descontar_cupo(
         payload["actividad"], payload["horario"], payload["cantidadPersonas"]
     )
 
+    # Generar ID de inscripción basado en el primer ID
+    id_principal = f"INS-{ids_inscripciones[0]:05d}" if ids_inscripciones else "INS-00001"
+    
     resultado = ResultadoInscripcion(
         exito=True,
         mensaje="Inscripción exitosa",
-        id_inscripcion="INS-001"
+        id_inscripcion=id_principal
     )
     return resultado.to_json()

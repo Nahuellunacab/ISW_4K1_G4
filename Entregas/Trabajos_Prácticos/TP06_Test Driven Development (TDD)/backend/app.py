@@ -20,20 +20,21 @@ sys.path.insert(
 
 from inscribirse_actividad import (
     inscribirse_a_actividad,
-    RepositorioActividadesSQLite
+    get_repositorio
 )
 
 # Inicializar Flask
 app = Flask(__name__)
 CORS(app)
 
-# Inicializar repositorio
-db_path = os.path.join(
-    os.path.dirname(__file__),
-    '..',
-    'actividades.db'
-)
-repositorio = RepositorioActividadesSQLite(db_path)
+
+def obtener_repositorio():
+    """
+    Obtiene la instancia del repositorio para el backend.
+    
+    Usa la función get_repositorio() que maneja la inicialización lazy.
+    """
+    return get_repositorio()
 
 
 @app.route('/api/actividades', methods=['GET'])
@@ -45,7 +46,8 @@ def obtener_actividades():
         JSON con lista de actividades
     """
     try:
-        actividades = repositorio.obtener_todas_actividades()
+        repo = obtener_repositorio()
+        actividades = repo.obtener_todas_actividades()
         return jsonify({
             'exito': True,
             'actividades': actividades
@@ -69,7 +71,8 @@ def obtener_horarios(nombre_actividad):
         JSON con lista de horarios disponibles
     """
     try:
-        horarios = repositorio.obtener_horarios_actividad(nombre_actividad)
+        repo = obtener_repositorio()
+        horarios = repo.obtener_horarios_actividad(nombre_actividad)
         return jsonify({
             'exito': True,
             'horarios': horarios

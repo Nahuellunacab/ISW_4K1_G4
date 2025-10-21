@@ -16,10 +16,38 @@ sys.path.insert(
 )
 
 from inscribirse_actividad import inscribirse_a_actividad
+import inscribirse_actividad
 
 
 class TestInscripcionActividad(unittest.TestCase):
     """Tests para verificar la funcionalidad de inscripción a actividades."""
+    
+    @classmethod
+    def setUpClass(cls):
+        """
+        Limpia la base de datos antes de ejecutar todos los tests.
+        
+        Si la BD está bloqueada por otro proceso (ej: backend corriendo),
+        simplemente la usa sin limpiarla. Los tests seguirán funcionando
+        correctamente gracias a las validaciones y datos de prueba específicos.
+        """
+        db_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', 'actividades.db')
+        )
+        
+        # Intentar limpiar la BD
+        if os.path.exists(db_path):
+            try:
+                os.remove(db_path)
+                print(f"\n✓ Base de datos limpiada: {db_path}\n")
+            except PermissionError:
+                print(f"\n⚠️  Base de datos en uso por otro proceso")
+                print(f"   Los tests se ejecutarán con la BD existente")
+                print(f"   TIP: Cierra el backend antes de ejecutar tests\n")
+        
+        # Resetear la instancia global del repositorio
+        inscribirse_actividad._repositorio_instance = None
+
 
     def test_inscribirse_sin_aceptar_terminos_debe_fallar(self):
         """
