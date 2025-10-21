@@ -6,7 +6,7 @@ __pycache__/
 */_pycache_/*
 */.vscode/*
 # Databases
-*.db
+actividades.db
 *.sqlite3
 
 # Project-specific
