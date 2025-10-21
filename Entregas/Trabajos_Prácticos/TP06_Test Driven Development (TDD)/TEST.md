@@ -4,19 +4,76 @@ Siguiendo la metodología **Test-Driven Development (TDD)**, los tests se consti
 
 Cada test implementado representa un escenario derivado de la User Story **“Inscribirme a actividad”**, en el cual se valida un requisito específico. Los tests están desarrollados con el framework estándar `unittest` de Python, lo que asegura la facilidad de ejecución, integración en pipelines de CI/CD y legibilidad para futuros mantenedores. Además, todas las respuestas de la función `inscribirse_a_actividad` se validan en formato **JSON**, lo cual asegura consistencia en la comunicación entre el backend y el frontend.
 
-En cuanto a la **cobertura de pruebas**, se abordaron múltiples dimensiones de validación:
+---
 
-- **Condiciones contractuales:** Se verifica que no se permita la inscripción cuando el usuario no acepta los términos y condiciones.  
-- **Requisitos de vestimenta:** En actividades que requieren un talle de vestimenta (ej. Palestra o Tirolesa), el test asegura que el campo sea obligatorio y que la inscripción falle si no se completa.  
-- **Gestión de cupos:** Se incluyen casos en los que la inscripción debe fallar por falta de disponibilidad en un horario determinado.  
-- **Restricciones por edad:** Se valida que no se permita la inscripción de menores cuando la actividad define un límite mínimo de edad.  
-- **Disponibilidad horaria:** Se contemplan casos donde el parque está cerrado o el horario seleccionado no corresponde a la actividad, esperando un rechazo adecuado.  
-- **Éxito de inscripción:** Se desarrollaron pruebas positivas en las que todos los datos son correctos y la inscripción debe ser exitosa, generando un identificador único de inscripción (`idInscripcion`).  
-- **Múltiples participantes:** Se comprueba la inscripción de más de una persona en actividades con cupo suficiente.  
+## Historia de Usuario
 
-La implementación de estos tests asegura que tanto los **escenarios de error** como los **escenarios de éxito** estén cubiertos, garantizando así la robustez de la funcionalidad. Cada test cuenta con precondiciones claras (payload de entrada), una acción (ejecución de la función) y un conjunto de aserciones (validación del resultado), lo cual no solo comprueba el funcionamiento correcto del sistema sino que también documenta, en código ejecutable, las reglas de negocio de la aplicación.
+**Inscribirme a actividad**  
+COMO visitante QUIERO inscribirme a una actividad PARA reservar mi lugar en la misma.
 
-En términos de ejecución, las pruebas se pueden correr mediante el siguiente comando:
+---
 
-```bash
-python -m unittest discover -s tests
+## Criterios de Aceptación
+
+- Debe requerir seleccionar una actividad del conjunto de actividades disponibles (Tirolesa, Safari, Palestra y Jardinería), siempre y cuando tengan cupos disponibles en el horario elegido.  
+- Debe requerir seleccionar el horario dentro de los disponibles.  
+- Debe indicar la cantidad de personas que participarán de la actividad.  
+- Para cada persona que participa, debe ingresar los datos del visitante: nombre, DNI, edad y talla de vestimenta si la actividad lo demanda.  
+- Debe requerir aceptar los términos y condiciones específicos de la actividad.  
+
+---
+
+## Relación entre criterios y pruebas
+
+Los tests fueron diseñados siguiendo **TDD** y se derivan directamente de los criterios de aceptación y pruebas de usuario definidas. Cada prueba implementada valida un requisito específico de la historia de usuario:
+
+### 1. Inscripción exitosa con todos los datos correctos  
+- **Test:** `test_inscribirse_exitosamente_con_todos_los_datos_correctos`  
+- **Valida:** Selección de actividad, horario válido, datos completos, aceptación de términos.  
+- **Resultado esperado:** `exito = True`, mensaje = “Inscripción exitosa”, con `idInscripcion`.  
+
+### 2. Inscripción sin cupo disponible  
+- **Test:** `test_inscribirse_sin_cupo_en_horario_seleccionado_debe_fallar`  
+- **Valida:** Requisito de cupo.  
+- **Resultado esperado:** `exito = False`, mensaje indicando falta de disponibilidad.  
+
+### 3. Inscripción sin requerir talle de vestimenta  
+- **Test:** `test_inscribirse_a_actividad_sin_requerir_vestimenta`  
+- **Valida:** Actividades que no exigen vestimenta (Safari, Jardinería).  
+- **Resultado esperado:** `exito = True`, mensaje = “Inscripción exitosa”, con `idInscripcion`.  
+
+### 4. Inscripción sin aceptar términos y condiciones  
+- **Test:** `test_inscribirse_sin_aceptar_terminos_debe_fallar`  
+- **Valida:** Aceptación obligatoria de términos.  
+- **Resultado esperado:** `exito = False`, mensaje = “Debe aceptar Términos y Condiciones”.  
+
+### 5. Inscripción sin talle de vestimenta requerido  
+- **Test:** `test_inscribirse_sin_talle_requerido`  
+- **Valida:** Exigencia de talla en Palestra y Tirolesa.  
+- **Resultado esperado:** `exito = False`, mensaje mencionando la falta de talla.  
+
+### 6. Inscripción en horario no disponible  
+- **Test:** `test_inscribirse_en_horario_no_disponible_debe_fallar`  
+- **Valida:** Restricción de horarios válidos.  
+- **Resultado esperado:** `exito = False`, mensaje indicando indisponibilidad.  
+
+### 7. Inscripción con múltiples personas válidas  
+- **Test:** `test_inscribirse_con_multiples_personas_validas`  
+- **Valida:** Inscripción de más de un participante con cupo suficiente.  
+- **Resultado esperado:** `exito = True`, mensaje = “Inscripción exitosa”, con `idInscripcion`.  
+
+### 8. Inscripción con edad menor al límite  
+- **Test:** `test_inscribirse_con_edad_menor_al_limite_debe_fallar`  
+- **Valida:** Restricciones por edad mínima (Palestra 12 años, Tirolesa 8 años).  
+- **Resultado esperado:** `exito = False`, mensaje mencionando la edad, sin `idInscripcion`.  
+
+---
+## Ejecución de las pruebas
+
+Las pruebas se pueden correr de dos maneras:
+
+1. **Desde la consola**, utilizando el siguiente comando:
+   ```bash
+   python -m unittest discover -s tests
+2. **Desde Visual Studio Code**
+    presionando el botón de (play) que aparece en la parte superior de cada archivo de test.
