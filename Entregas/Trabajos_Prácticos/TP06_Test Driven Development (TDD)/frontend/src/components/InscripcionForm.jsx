@@ -15,11 +15,14 @@ function InscripcionForm({ onVolver }) {
   const [horarioSeleccionado, setHorarioSeleccionado] = useState('');
   const [cantidadPersonas, setCantidadPersonas] = useState(1);
   const [personas, setPersonas] = useState([]);
+  const [personasErrores, setPersonasErrores] = useState([]);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
   const [mostrarTerminos, setMostrarTerminos] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [paso, setPaso] = useState(1);
+  const nombreRegex = /^[A-Za-zÀ-ÿ\s\-']+$/;
+  const dniRegex = /^\d{6,10}$/;
 
   useEffect(() => {
     cargarActividades();
@@ -32,6 +35,7 @@ function InscripcionForm({ onVolver }) {
   }, [actividadSeleccionada]);
 
   useEffect(() => {
+    // Asegurar que el array de personas siempre tenga la longitud solicitada
     setPersonas((prevPersonas) => {
       const nuevasPersonas = Array.from({ length: cantidadPersonas }, (_, i) => ({
         id: i + 1,
@@ -41,6 +45,11 @@ function InscripcionForm({ onVolver }) {
         DNI: prevPersonas[i]?.DNI || '',
       }));
       return nuevasPersonas;
+    });
+    // Mantener array de errores en la misma longitud
+    setPersonasErrores((prev) => {
+      const arr = Array.from({ length: cantidadPersonas }, (_, i) => prev?.[i] || {});
+      return arr;
     });
   }, [cantidadPersonas]);
 
@@ -78,10 +87,57 @@ function InscripcionForm({ onVolver }) {
     setHorarioSeleccionado('');
   };
 
+  const actividadRequiereVestimenta = (actividad = actividadSeleccionada) => {
+    const actividadObj = actividades.find((a) => a.nombre === actividad);
+    return actividadObj?.requiereVestimenta || false;
+  };
+
+  const validarPersona = (persona) => {
+    const errores = {};
+    const nombre = (persona?.nombre || '').toString().trim();
+    if (!nombre || !nombreRegex.test(nombre)) {
+      errores.nombre = 'Nombre inválido (solo letras, espacios y guiones)';
+    }
+    const dni = (persona?.DNI || '').toString().trim();
+    if (!dni || !dniRegex.test(dni)) {
+      errores.DNI = 'DNI inválido (6 a 10 dígitos)';
+    }
+    const edadVal = persona?.edad === '' ? null : Number(persona?.edad);
+    if (edadVal === null || Number.isNaN(edadVal)) {
+      errores.edad = 'Edad inválida';
+    } else if (edadVal <= 0) {
+      errores.edad = 'La edad debe ser mayor a 0';
+    }
+    if (actividadRequiereVestimenta() && !persona?.tallaVestimenta) {
+      errores.tallaVestimenta = 'La actividad requiere talla de vestimenta';
+    }
+    return errores;
+  };
+
+  const validarDuplicadosDNI = (listaPersonas) => {
+    const dnis = listaPersonas.map((p) => String(p?.DNI || '').trim());
+    const repetidos = dnis.filter((dni, i) => dni && dnis.indexOf(dni) !== i);
+    return new Set(repetidos);
+  };
+
   const handlePersonaChange = (index, campo, valor) => {
     const nuevasPersonas = [...personas];
-    nuevasPersonas[index][campo] = valor;
+    nuevasPersonas[index] = { ...(nuevasPersonas[index] || {}), [campo]: valor };
     setPersonas(nuevasPersonas);
+    // validar en caliente y actualizar errores
+    const errores = [...(personasErrores || [])];
+    errores[index] = validarPersona(nuevasPersonas[index]);
+    const repetidos = validarDuplicadosDNI(nuevasPersonas);
+    errores.forEach((e, i) => {
+      if (repetidos.has(String(nuevasPersonas[i].DNI).trim()) && nuevasPersonas[i].DNI) {
+        errores[i] = { ...(errores[i] || {}), DNI: 'DNI duplicado en el formulario' };
+      } else if (errores[i]?.DNI === 'DNI duplicado en el formulario' && !repetidos.has(String(nuevasPersonas[i].DNI).trim())) {
+        const copy = { ...(errores[i] || {}) };
+        delete copy.DNI;
+        errores[i] = copy;
+      }
+    });
+    setPersonasErrores(errores);
   };
 
   const validarFormulario = () => {
@@ -95,15 +151,34 @@ function InscripcionForm({ onVolver }) {
       return false;
     }
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const persona of personas) {
-      if (!persona.nombre || !persona.edad || !persona.DNI) {
-        setMensaje({
-          tipo: 'error',
-          texto: 'Complete todos los datos de las personas',
-        });
-        return false;
+    // validar todas las personas con las mismas reglas que el backend
+    const errores = personas.map((p) => validarPersona(p));
+    const repetidos = validarDuplicadosDNI(personas);
+    errores.forEach((err, i) => {
+      if (repetidos.has(String(personas[i].DNI).trim()) && personas[i].DNI) {
+        errores[i] = { ...(err || {}), DNI: 'DNI duplicado en el formulario' };
       }
+    });
+    setPersonasErrores(errores);
+    const hayErrores = errores.some((e) => e && Object.keys(e).length > 0);
+    if (hayErrores) {
+      // Construir mensaje representativo por persona
+      const resumen = errores
+        .map((err, i) => {
+          if (!err || Object.keys(err).length === 0) return null;
+          const nombre = (personas[i]?.nombre || `Persona ${i + 1}`).toString().trim();
+          const detalles = Object.values(err).join(', ');
+          return `${i + 1}) ${nombre} — ${detalles}`;
+        })
+        .filter(Boolean)
+        .join('; ');
+
+      const texto = resumen
+        ? `Errores en los participantes: ${resumen}`
+        : 'Corrija los errores en los datos de las personas';
+
+      setMensaje({ tipo: 'error', texto });
+      return false;
     }
 
     if (!aceptoTerminos) {
@@ -178,11 +253,6 @@ function InscripcionForm({ onVolver }) {
     setMensaje(null);
   };
 
-  const actividadRequiereVestimenta = () => {
-    const actividad = actividades.find((a) => a.nombre === actividadSeleccionada);
-    return actividad?.requiereVestimenta || false;
-  };
-
   const obtenerCuposDisponibles = () => {
     const horario = horarios.find((h) => h.horario === horarioSeleccionado);
     return horario?.cuposDisponibles || 0;
@@ -216,6 +286,37 @@ function InscripcionForm({ onVolver }) {
         return;
       }
     }
+    // Si avanzamos desde paso 2 validar los datos de personas antes de permitir paso 3
+    if (paso === 2) {
+      const errores = personas.map((p) => validarPersona(p));
+      const repetidos = validarDuplicadosDNI(personas);
+      errores.forEach((err, i) => {
+        if (repetidos.has(String(personas[i].DNI).trim()) && personas[i].DNI) {
+          errores[i] = { ...(err || {}), DNI: 'DNI duplicado en el formulario' };
+        }
+      });
+      setPersonasErrores(errores);
+      const hayErrores = errores.some((e) => e && Object.keys(e).length > 0);
+      if (hayErrores) {
+        const resumen = errores
+          .map((err, i) => {
+            if (!err || Object.keys(err).length === 0) return null;
+            const nombre = (personas[i]?.nombre || `Persona ${i + 1}`).toString().trim();
+            const detalles = Object.values(err).join(', ');
+            return `${i + 1}) ${nombre} — ${detalles}`;
+          })
+          .filter(Boolean)
+          .join('; ');
+
+        const texto = resumen
+          ? `Corrija los errores en participantes: ${resumen}`
+          : 'Corrija los errores en los datos de las personas';
+
+        setMensaje({ tipo: 'error', texto });
+        return;
+      }
+    }
+
     setPaso(paso + 1);
     setMensaje(null);
   };
@@ -349,6 +450,7 @@ function InscripcionForm({ onVolver }) {
                 index={index}
                 requiereVestimenta={actividadRequiereVestimenta()}
                 onChange={handlePersonaChange}
+                errores={personasErrores[index] || {}}
               />
             ))}
 
