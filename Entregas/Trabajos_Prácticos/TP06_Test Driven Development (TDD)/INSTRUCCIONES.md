@@ -32,3 +32,8 @@ npm run dev
 ```link
 http://localhost:3000/
 ```
+## Para ejecutar los tests
+Las pruebas se pueden correr desde la consola, desde la carpeta backend, con el comando:
+```
+python -m unittest tests.test_inscribirse_actividad.TestInscripcionActividad
+```
