@@ -1,169 +1,225 @@
-import { useState, useEffect } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
+
 import {
   obtenerActividades,
   obtenerHorarios,
   crearInscripcion,
 } from '../services/api';
+
 import { TERMINOS_Y_CONDICIONES } from '../constants/terminos';
 import PersonaForm from './PersonaForm';
 import './InscripcionForm.css';
 
+
 function InscripcionForm({ onVolver }) {
+  // =========================
+  // Estado
+  // =========================
   const [actividades, setActividades] = useState([]);
   const [actividadSeleccionada, setActividadSeleccionada] = useState('');
   const [horarios, setHorarios] = useState([]);
   const [horarioSeleccionado, setHorarioSeleccionado] = useState('');
   const [cantidadPersonas, setCantidadPersonas] = useState(1);
-  const [personas, setPersonas] = useState([]);
-  const [personasErrores, setPersonasErrores] = useState([]);
+  const [personas, setPersonas] = useState([
+    { id: 1, nombre: '', tallaVestimenta: '', edad: '', DNI: '' },
+  ]);
+  const [personasErrores, setPersonasErrores] = useState([{}]);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
   const [mostrarTerminos, setMostrarTerminos] = useState(false);
   const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState(null);
+  const [mensaje, setMensaje] = useState(null); // { tipo: 'error' | 'exito', texto: string }
   const [paso, setPaso] = useState(1);
-  const nombreRegex = /^[A-Za-zÀ-ÿ\s\-']+$/;
-  const dniRegex = /^\d{6,10}$/;
 
+  // Regex compilados una sola vez
+  const nombreRegexRef = useRef(/^[A-Za-zÀ-ÿ\s\-']+$/);
+  const dniRegexRef = useRef(/^\d{6,10}$/);
+
+  // =========================
+  // Carga inicial de actividades
+  // =========================
   useEffect(() => {
-    cargarActividades();
+    let cancelado = false;
+    (async () => {
+      try {
+        const resp = await obtenerActividades();
+        if (!cancelado && resp?.exito && Array.isArray(resp.actividades)) {
+          setActividades(resp.actividades);
+        }
+      } catch {
+        if (!cancelado) {
+          setMensaje({ tipo: 'error', texto: 'Error al cargar actividades' });
+        }
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  // =========================
+  // Carga de horarios cuando cambia la actividad
+  // =========================
+  const cargarHorarios = useCallback(async (nombreActividad, signal) => {
+    const vaciar = () => {
+      setHorarios([]);
+      setHorarioSeleccionado('');
+    };
+    if (!nombreActividad) {
+      vaciar();
+      return;
+    }
+    try {
+      const resp = await obtenerHorarios(nombreActividad, { signal });
+      if (resp?.exito && Array.isArray(resp.horarios)) {
+        setHorarios(resp.horarios);
+      } else {
+        vaciar();
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        setMensaje({ tipo: 'error', texto: 'Error al cargar horarios' });
+        vaciar();
+      }
+    }
   }, []);
 
   useEffect(() => {
-    if (actividadSeleccionada) {
-      cargarHorarios(actividadSeleccionada);
-    }
-  }, [actividadSeleccionada]);
+    const ctrl = new AbortController();
+    cargarHorarios(actividadSeleccionada, ctrl.signal);
+    // al cambiar de actividad, volvemos a paso 1 y reseteamos selección de horario & cantidad
+    setPaso(1);
+    setHorarioSeleccionado('');
+    setCantidadPersonas(1);
+    return () => ctrl.abort();
+  }, [actividadSeleccionada, cargarHorarios]);
 
+  // =========================
+  // Mantener largo de arrays personas/errores = cantidadPersonas
+  // =========================
   useEffect(() => {
-    // Asegurar que el array de personas siempre tenga la longitud solicitada
-    setPersonas((prevPersonas) => {
-      const nuevasPersonas = Array.from({ length: cantidadPersonas }, (_, i) => ({
+    setPersonas((prev) => {
+      const next = Array.from({ length: cantidadPersonas }, (_, i) => ({
         id: i + 1,
-        nombre: prevPersonas[i]?.nombre || '',
-        tallaVestimenta: prevPersonas[i]?.tallaVestimenta || '',
-        edad: prevPersonas[i]?.edad || '',
-        DNI: prevPersonas[i]?.DNI || '',
+        nombre: prev[i]?.nombre ?? '',
+        tallaVestimenta: prev[i]?.tallaVestimenta ?? '',
+        edad: prev[i]?.edad ?? '',
+        DNI: prev[i]?.DNI ?? '',
       }));
-      return nuevasPersonas;
+      return next;
     });
-    // Mantener array de errores en la misma longitud
-    setPersonasErrores((prev) => {
-      const arr = Array.from({ length: cantidadPersonas }, (_, i) => prev?.[i] || {});
-      return arr;
-    });
+    setPersonasErrores((prev) =>
+      Array.from({ length: cantidadPersonas }, (_, i) => prev?.[i] || {})
+    );
   }, [cantidadPersonas]);
 
-  const cargarActividades = async () => {
-    try {
-      const response = await obtenerActividades();
-      if (response.exito) {
-        setActividades(response.actividades);
+  // =========================
+  // Utilidades de validación
+  // =========================
+  const actividadRequiereVestimenta = useCallback(
+    (actividad = actividadSeleccionada) => {
+      const actividadObj = actividades.find((a) => a.nombre === actividad);
+      return Boolean(actividadObj?.requiereVestimenta);
+    },
+    [actividades, actividadSeleccionada]
+  );
+
+  const validarPersona = useCallback(
+    (persona) => {
+      const errores = {};
+      const nombre = (persona?.nombre || '').toString().trim();
+      if (!nombre || !nombreRegexRef.current.test(nombre)) {
+        errores.nombre = 'Nombre inválido (solo letras, espacios y guiones)';
       }
-    } catch (error) {
-      setMensaje({
-        tipo: 'error',
-        texto: 'Error al cargar actividades',
-      });
-    }
-  };
-
-  const cargarHorarios = async (nombreActividad) => {
-    try {
-      const response = await obtenerHorarios(nombreActividad);
-      if (response.exito) {
-        setHorarios(response.horarios);
+      const dni = (persona?.DNI || '').toString().trim();
+      if (!dni || !dniRegexRef.current.test(dni)) {
+        errores.DNI = 'DNI inválido (6 a 10 dígitos)';
       }
-    } catch (error) {
-      setMensaje({
-        tipo: 'error',
-        texto: 'Error al cargar horarios',
-      });
-    }
-  };
+      const edadVal = persona?.edad === '' ? null : Number(persona?.edad);
+      if (edadVal === null || Number.isNaN(edadVal)) {
+        errores.edad = 'Edad inválida';
+      } else if (edadVal <= 0) {
+        errores.edad = 'La edad debe ser mayor a 0';
+      }
+      if (actividadRequiereVestimenta() && !persona?.tallaVestimenta) {
+        errores.tallaVestimenta = 'La actividad requiere talla de vestimenta';
+      }
+      return errores;
+    },
+    [actividadRequiereVestimenta]
+  );
 
-  const handleActividadChange = (e) => {
-    const actividad = e.target.value;
-    setActividadSeleccionada(actividad);
-    setHorarioSeleccionado('');
-  };
-
-  const actividadRequiereVestimenta = (actividad = actividadSeleccionada) => {
-    const actividadObj = actividades.find((a) => a.nombre === actividad);
-    return actividadObj?.requiereVestimenta || false;
-  };
-
-  const validarPersona = (persona) => {
-    const errores = {};
-    const nombre = (persona?.nombre || '').toString().trim();
-    if (!nombre || !nombreRegex.test(nombre)) {
-      errores.nombre = 'Nombre inválido (solo letras, espacios y guiones)';
-    }
-    const dni = (persona?.DNI || '').toString().trim();
-    if (!dni || !dniRegex.test(dni)) {
-      errores.DNI = 'DNI inválido (6 a 10 dígitos)';
-    }
-    const edadVal = persona?.edad === '' ? null : Number(persona?.edad);
-    if (edadVal === null || Number.isNaN(edadVal)) {
-      errores.edad = 'Edad inválida';
-    } else if (edadVal <= 0) {
-      errores.edad = 'La edad debe ser mayor a 0';
-    }
-    if (actividadRequiereVestimenta() && !persona?.tallaVestimenta) {
-      errores.tallaVestimenta = 'La actividad requiere talla de vestimenta';
-    }
-    return errores;
-  };
-
-  const validarDuplicadosDNI = (listaPersonas) => {
-    const dnis = listaPersonas.map((p) => String(p?.DNI || '').trim());
-    const repetidos = dnis.filter((dni, i) => dni && dnis.indexOf(dni) !== i);
+  const validarDuplicadosDNI = useCallback((lista) => {
+    const dnis = lista.map((p) => String(p?.DNI || '').trim()).filter(Boolean);
+    const repetidos = dnis.filter((dni, i, arr) => arr.indexOf(dni) !== i);
     return new Set(repetidos);
+  }, []);
+
+  // =========================
+  // Handlers
+  // =========================
+  const handleActividadChange = (e) => {
+    setActividadSeleccionada(e.target.value);
+    setMensaje(null);
   };
 
   const handlePersonaChange = (index, campo, valor) => {
-    const nuevasPersonas = [...personas];
-    nuevasPersonas[index] = { ...(nuevasPersonas[index] || {}), [campo]: valor };
-    setPersonas(nuevasPersonas);
-    // validar en caliente y actualizar errores
-    const errores = [...(personasErrores || [])];
-    errores[index] = validarPersona(nuevasPersonas[index]);
-    const repetidos = validarDuplicadosDNI(nuevasPersonas);
-    errores.forEach((e, i) => {
-      if (repetidos.has(String(nuevasPersonas[i].DNI).trim()) && nuevasPersonas[i].DNI) {
-        errores[i] = { ...(errores[i] || {}), DNI: 'DNI duplicado en el formulario' };
-      } else if (errores[i]?.DNI === 'DNI duplicado en el formulario' && !repetidos.has(String(nuevasPersonas[i].DNI).trim())) {
-        const copy = { ...(errores[i] || {}) };
-        delete copy.DNI;
-        errores[i] = copy;
+    const nuevas = [...personas];
+    // normalizo espacios en blanco para strings
+    const valNorm =
+      typeof valor === 'string' ? valor.replace(/\s{2,}/g, ' ').trimStart() : valor;
+    nuevas[index] = { ...(nuevas[index] || {}), [campo]: valNorm };
+    setPersonas(nuevas);
+
+    // validación en caliente
+    const errs = [...(personasErrores || [])];
+    errs[index] = validarPersona(nuevas[index]);
+    const repetidos = validarDuplicadosDNI(nuevas);
+    errs.forEach((e, i) => {
+      const dniActual = String(nuevas[i]?.DNI || '').trim();
+      if (dniActual && repetidos.has(dniActual)) {
+        errs[i] = { ...(errs[i] || {}), DNI: 'DNI duplicado en el formulario' };
+      } else if (errs[i]?.DNI === 'DNI duplicado en el formulario' && !repetidos.has(dniActual)) {
+        const c = { ...(errs[i] || {}) };
+        delete c.DNI;
+        errs[i] = c;
       }
     });
-    setPersonasErrores(errores);
+    setPersonasErrores(errs);
   };
+
+  const obtenerCuposDisponibles = useCallback(() => {
+    const h = horarios.find((x) => x.horario === horarioSeleccionado);
+    return Number(h?.cuposDisponibles) || 0;
+  }, [horarios, horarioSeleccionado]);
 
   const validarFormulario = () => {
     if (!actividadSeleccionada) {
       setMensaje({ tipo: 'error', texto: 'Debe seleccionar una actividad' });
       return false;
     }
-
     if (!horarioSeleccionado) {
       setMensaje({ tipo: 'error', texto: 'Debe seleccionar un horario' });
       return false;
     }
 
-    // validar todas las personas con las mismas reglas que el backend
-    const errores = personas.map((p) => validarPersona(p));
+    const errs = personas.map((p) => validarPersona(p));
     const repetidos = validarDuplicadosDNI(personas);
-    errores.forEach((err, i) => {
-      if (repetidos.has(String(personas[i].DNI).trim()) && personas[i].DNI) {
-        errores[i] = { ...(err || {}), DNI: 'DNI duplicado en el formulario' };
+    errs.forEach((e, i) => {
+      const dni = String(personas[i]?.DNI || '').trim();
+      if (dni && repetidos.has(dni)) {
+        errs[i] = { ...(e || {}), DNI: 'DNI duplicado en el formulario' };
       }
     });
-    setPersonasErrores(errores);
-    const hayErrores = errores.some((e) => e && Object.keys(e).length > 0);
+    setPersonasErrores(errs);
+
+    const hayErrores = errs.some((e) => e && Object.keys(e).length > 0);
     if (hayErrores) {
-      // Construir mensaje representativo por persona
-      const resumen = errores
+      const resumen = errs
         .map((err, i) => {
           if (!err || Object.keys(err).length === 0) return null;
           const nombre = (personas[i]?.nombre || `Persona ${i + 1}`).toString().trim();
@@ -172,12 +228,12 @@ function InscripcionForm({ onVolver }) {
         })
         .filter(Boolean)
         .join('; ');
-
-      const texto = resumen
-        ? `Errores en los participantes: ${resumen}`
-        : 'Corrija los errores en los datos de las personas';
-
-      setMensaje({ tipo: 'error', texto });
+      setMensaje({
+        tipo: 'error',
+        texto: resumen
+          ? `Errores en los participantes: ${resumen}`
+          : 'Corrija los errores en los datos de las personas',
+      });
       return false;
     }
 
@@ -188,117 +244,43 @@ function InscripcionForm({ onVolver }) {
       });
       return false;
     }
-
     return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validarFormulario()) {
-      return;
-    }
-
-    setCargando(true);
-    setMensaje(null);
-
-    try {
-      const datosInscripcion = {
-        actividad: actividadSeleccionada,
-        cantidadPersonas,
-        horario: horarioSeleccionado,
-        personas: personas.map((p) => ({
-          nombre: p.nombre,
-          tallaVestimenta: p.tallaVestimenta || null,
-          edad: parseInt(p.edad, 10),
-          DNI: p.DNI,
-        })),
-        aceptoTerminosYCondiciones: aceptoTerminos,
-      };
-
-      const response = await crearInscripcion(datosInscripcion);
-
-      if (response.exito) {
-        setMensaje({
-          tipo: 'exito',
-          texto: `¡Inscripción exitosa! ID: ${response.idInscripcion}`,
-        });
-        // Limpiar formulario después de 3 segundos
-        setTimeout(() => {
-          resetFormulario();
-        }, 3000);
-      } else {
-        setMensaje({
-          tipo: 'error',
-          texto: response.mensaje,
-        });
-      }
-    } catch (error) {
-      setMensaje({
-        tipo: 'error',
-        texto: error.response?.data?.mensaje || 'Error al procesar la inscripción',
-      });
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  const resetFormulario = () => {
-    setActividadSeleccionada('');
-    setHorarioSeleccionado('');
-    setCantidadPersonas(1);
-    setPersonas([]);
-    setAceptoTerminos(false);
-    setPaso(1);
-    setMensaje(null);
-  };
-
-  const obtenerCuposDisponibles = () => {
-    const horario = horarios.find((h) => h.horario === horarioSeleccionado);
-    return horario?.cuposDisponibles || 0;
   };
 
   const avanzarPaso = () => {
     if (paso === 1) {
       if (!actividadSeleccionada || !horarioSeleccionado) {
-        setMensaje({
-          tipo: 'error',
-          texto: 'Seleccione actividad y horario',
-        });
+        setMensaje({ tipo: 'error', texto: 'Seleccione actividad y horario' });
         return;
       }
-
-      // Validar cantidad de personas
-      if (!cantidadPersonas || cantidadPersonas === 0) {
-        setMensaje({
-          tipo: 'error',
-          texto: 'Debe ingresar al menos 1 persona',
-        });
+      if (!cantidadPersonas || cantidadPersonas < 1) {
+        setMensaje({ tipo: 'error', texto: 'Debe ingresar al menos 1 persona' });
         return;
       }
-
-      const cuposDisponibles = obtenerCuposDisponibles();
-      if (cantidadPersonas > cuposDisponibles) {
+      const cupos = obtenerCuposDisponibles();
+      if (cantidadPersonas > cupos) {
         setMensaje({
           tipo: 'error',
-          texto: `No hay suficientes cupos. Disponibles: ${cuposDisponibles}`,
+          texto: `No hay suficientes cupos. Disponibles: ${cupos}`,
         });
         return;
       }
     }
-    // Si avanzamos desde paso 2 validar los datos de personas antes de permitir paso 3
+
     if (paso === 2) {
-      const errores = personas.map((p) => validarPersona(p));
+      const errs = personas.map((p) => validarPersona(p));
       const repetidos = validarDuplicadosDNI(personas);
-      errores.forEach((err, i) => {
-        if (repetidos.has(String(personas[i].DNI).trim()) && personas[i].DNI) {
-          errores[i] = { ...(err || {}), DNI: 'DNI duplicado en el formulario' };
+      errs.forEach((e, i) => {
+        const dni = String(personas[i]?.DNI || '').trim();
+        if (dni && repetidos.has(dni)) {
+          errs[i] = { ...(e || {}), DNI: 'DNI duplicado en el formulario' };
         }
       });
-      setPersonasErrores(errores);
-      const hayErrores = errores.some((e) => e && Object.keys(e).length > 0);
+      setPersonasErrores(errs);
+
+      const hayErrores = errs.some((e) => e && Object.keys(e).length > 0);
       if (hayErrores) {
-        const resumen = errores
+        const resumen = errs
           .map((err, i) => {
             if (!err || Object.keys(err).length === 0) return null;
             const nombre = (personas[i]?.nombre || `Persona ${i + 1}`).toString().trim();
@@ -307,52 +289,112 @@ function InscripcionForm({ onVolver }) {
           })
           .filter(Boolean)
           .join('; ');
-
-        const texto = resumen
-          ? `Corrija los errores en participantes: ${resumen}`
-          : 'Corrija los errores en los datos de las personas';
-
-        setMensaje({ tipo: 'error', texto });
+        setMensaje({
+          tipo: 'error',
+          texto: resumen
+            ? `Corrija los errores en participantes: ${resumen}`
+            : 'Corrija los errores en los datos de las personas',
+        });
         return;
       }
     }
 
-    setPaso(paso + 1);
+    setPaso((p) => p + 1);
     setMensaje(null);
   };
 
   const retrocederPaso = () => {
-    setPaso(paso - 1);
+    setPaso((p) => Math.max(1, p - 1));
     setMensaje(null);
   };
+
+  const resetFormulario = () => {
+    setActividadSeleccionada('');
+    setHorarioSeleccionado('');
+    setCantidadPersonas(1);
+    setPersonas([{ id: 1, nombre: '', tallaVestimenta: '', edad: '', DNI: '' }]);
+    setPersonasErrores([{}]);
+    setAceptoTerminos(false);
+    setPaso(1);
+    setMensaje(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validarFormulario()) return;
+
+    setCargando(true);
+    setMensaje(null);
+
+    try {
+      const payload = {
+        actividad: actividadSeleccionada,
+        cantidadPersonas,
+        horario: horarioSeleccionado,
+        personas: personas.map((p) => ({
+          nombre: (p.nombre || '').toString().trim(),
+          tallaVestimenta: p.tallaVestimenta || null,
+          edad: parseInt(p.edad, 10),
+          DNI: (p.DNI || '').toString().trim(),
+        })),
+        aceptoTerminosYCondiciones: aceptoTerminos,
+      };
+
+      const resp = await crearInscripcion(payload);
+
+      if (resp?.exito) {
+        setMensaje({
+          tipo: 'exito',
+          texto: `¡Inscripción exitosa! ID: ${resp.idInscripcion}`,
+        });
+        // Limpiar tras unos segundos
+        setTimeout(() => {
+          resetFormulario();
+        }, 2500);
+      } else {
+        setMensaje({ tipo: 'error', texto: resp?.mensaje || 'No se pudo completar la inscripción' });
+      }
+    } catch (error) {
+      setMensaje({
+        tipo: 'error',
+        texto: error?.response?.data?.mensaje || 'Error al procesar la inscripción',
+      });
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // =========================
+  // Render
+  // =========================
+  const cuposDisponibles = horarioSeleccionado ? obtenerCuposDisponibles() : 0;
+  const maxCantidadInput = horarioSeleccionado ? Math.max(1, cuposDisponibles) : 10;
 
   return (
     <div className="inscripcion-form">
       <div className="form-header">
-        <button type="button" className="btn-volver" onClick={onVolver}>
+        <button type="button" className="btn-volver" onClick={onVolver} aria-label="Volver">
           ← Volver
         </button>
         <h2>Formulario de Inscripción</h2>
-        <div className="pasos">
-          <span className={paso === 1 ? 'paso-activo' : ''}>
-            1. Actividad
-          </span>
-          <span className={paso === 2 ? 'paso-activo' : ''}>
-            2. Personas
-          </span>
-          <span className={paso === 3 ? 'paso-activo' : ''}>
-            3. Confirmar
-          </span>
+        <div className="pasos" aria-label="Progreso">
+          <span className={paso === 1 ? 'paso-activo' : ''}>1. Actividad</span>
+          <span className={paso === 2 ? 'paso-activo' : ''}>2. Personas</span>
+          <span className={paso === 3 ? 'paso-activo' : ''}>3. Confirmar</span>
         </div>
       </div>
 
       {mensaje && (
-        <div className={`mensaje mensaje-${mensaje.tipo}`}>
+        <div
+          className={`mensaje mensaje-${mensaje.tipo}`}
+          role={mensaje.tipo === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
           {mensaje.texto}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {paso === 1 && (
           <div className="paso-content">
             <div className="form-group">
@@ -368,7 +410,7 @@ function InscripcionForm({ onVolver }) {
                   {actividades.map((actividad) => (
                     <option key={actividad.nombre} value={actividad.nombre}>
                       {actividad.nombre}
-                      {actividad.requiereVestimenta && ' (requiere talla)'}
+                      {actividad.requiereVestimenta ? ' (requiere talla)' : ''}
                     </option>
                   ))}
                 </select>
@@ -381,22 +423,28 @@ function InscripcionForm({ onVolver }) {
                 <select
                   id="horario"
                   value={horarioSeleccionado}
-                  onChange={(e) => setHorarioSeleccionado(e.target.value)}
+                  onChange={(e) => {
+                    setHorarioSeleccionado(e.target.value);
+                    setMensaje(null);
+                  }}
                   disabled={!actividadSeleccionada}
                   required
                 >
                   <option value="">Seleccione un horario</option>
-                  {horarios.map((horario) => {
-                    const sinCupos = !horario.cuposDisponibles || horario.cuposDisponibles === 0;
+                  {horarios.map((h) => {
+                    const sinCupos = !h.cuposDisponibles || h.cuposDisponibles === 0;
+                    const value = h.horario;
                     return (
                       <option
-                        key={horario.horario}
-                        value={horario.horario}
+                        key={`${value}__${h.cuposDisponibles}`}
+                        value={value}
                         disabled={sinCupos}
                         className={sinCupos ? 'opcion-sin-cupos' : ''}
-                        title={sinCupos ? 'Sin cupos disponibles' : `${horario.cuposDisponibles} cupos disponibles`}
+                        title={
+                          sinCupos ? 'Sin cupos disponibles' : `${h.cuposDisponibles} cupos disponibles`
+                        }
                       >
-                        {horario.horario} ({horario.cuposDisponibles} cupos)
+                        {h.horario} ({h.cuposDisponibles} cupos)
                       </option>
                     );
                   })}
@@ -410,27 +458,31 @@ function InscripcionForm({ onVolver }) {
                 <input
                   id="cantidadPersonas"
                   type="number"
-                  min="1"
-                  max={horarioSeleccionado ? obtenerCuposDisponibles() : 10}
+                  min={1}
+                  max={maxCantidadInput}
                   value={cantidadPersonas}
                   onChange={(e) => {
-                    const valor = parseInt(e.target.value, 10);
-                    if (valor >= 1) {
-                      setCantidadPersonas(valor);
-                    }
+                    const n = Number(e.target.value);
+                    if (Number.isNaN(n)) return;
+                    const bounded = Math.min(Math.max(1, n), maxCantidadInput);
+                    setCantidadPersonas(bounded);
                   }}
                   disabled={!horarioSeleccionado}
                   required
+                  inputMode="numeric"
                 />
                 {horarioSeleccionado && (
-                  <small className="helper-text">
-                    Cupos disponibles: {obtenerCuposDisponibles()}
-                  </small>
+                  <small className="helper-text">Cupos disponibles: {cuposDisponibles}</small>
                 )}
               </label>
             </div>
 
-            <button type="button" className="btn-siguiente" onClick={avanzarPaso}>
+            <button
+              type="button"
+              className="btn-siguiente"
+              onClick={avanzarPaso}
+              disabled={!actividadSeleccionada || !horarioSeleccionado}
+            >
               Siguiente →
             </button>
           </div>
@@ -438,11 +490,7 @@ function InscripcionForm({ onVolver }) {
 
         {paso === 2 && (
           <div className="paso-content">
-            <h3>
-              Datos de los Participantes (
-              {cantidadPersonas}
-              )
-            </h3>
+            <h3>Datos de los Participantes ({cantidadPersonas})</h3>
             {personas.map((persona, index) => (
               <PersonaForm
                 key={persona.id}
@@ -471,19 +519,13 @@ function InscripcionForm({ onVolver }) {
 
             <div className="resumen">
               <div className="resumen-item">
-                <strong>Actividad:</strong>
-                {' '}
-                {actividadSeleccionada}
+                <strong>Actividad:</strong> {actividadSeleccionada}
               </div>
               <div className="resumen-item">
-                <strong>Horario:</strong>
-                {' '}
-                {horarioSeleccionado}
+                <strong>Horario:</strong> {horarioSeleccionado}
               </div>
               <div className="resumen-item">
-                <strong>Cantidad de personas:</strong>
-                {' '}
-                {cantidadPersonas}
+                <strong>Cantidad de personas:</strong> {cantidadPersonas}
               </div>
             </div>
 
@@ -491,15 +533,15 @@ function InscripcionForm({ onVolver }) {
               <button
                 type="button"
                 className="btn-ver-terminos"
-                onClick={() => setMostrarTerminos(!mostrarTerminos)}
+                onClick={() => setMostrarTerminos((v) => !v)}
+                aria-expanded={mostrarTerminos}
+                aria-controls="terminos-contenido"
               >
-                {mostrarTerminos ? '▼' : '▶'}
-                {' '}
-                Ver Términos y Condiciones
+                {mostrarTerminos ? '▼' : '▶'} Ver Términos y Condiciones
               </button>
 
               {mostrarTerminos && (
-                <div className="terminos-contenido">
+                <div className="terminos-contenido" id="terminos-contenido">
                   <pre>{TERMINOS_Y_CONDICIONES}</pre>
                 </div>
               )}
@@ -512,14 +554,9 @@ function InscripcionForm({ onVolver }) {
                     checked={aceptoTerminos}
                     onChange={(e) => setAceptoTerminos(e.target.checked)}
                     required
-                  />
-                  {' '}
+                  />{' '}
                   <span>
-                    He leído y acepto los
-                    {' '}
-                    <strong>Términos y Condiciones</strong>
-                    {' '}
-                    *
+                    He leído y acepto los <strong>Términos y Condiciones</strong> *
                   </span>
                 </label>
               </div>
@@ -529,11 +566,7 @@ function InscripcionForm({ onVolver }) {
               <button type="button" className="btn-anterior" onClick={retrocederPaso}>
                 ← Anterior
               </button>
-              <button
-                type="submit"
-                className="btn-confirmar"
-                disabled={cargando || !aceptoTerminos}
-              >
+              <button type="submit" className="btn-confirmar" disabled={cargando || !aceptoTerminos}>
                 {cargando ? 'Procesando...' : 'Confirmar Inscripción'}
               </button>
             </div>
