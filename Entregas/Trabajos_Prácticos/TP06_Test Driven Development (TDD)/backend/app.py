@@ -137,6 +137,21 @@ def crear_inscripcion():
         }), 500
 
 
+@app.route('/', methods=['GET'])
+def ruta_raiz():
+    """Ruta raíz que redirige a la documentación de la API."""
+    return jsonify({
+        'mensaje': 'API EcoHarmony Park - Inscripción a Actividades',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/health',
+            'actividades': '/api/actividades',
+            'horarios': '/api/actividades/<nombre>/horarios',
+            'inscripciones': '/api/inscripciones (POST)'
+        }
+    }), 200
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Endpoint para verificar el estado del servidor."""
