@@ -285,16 +285,20 @@ function InscripcionForm({ onVolver }) {
                   required
                 >
                   <option value="">Seleccione un horario</option>
-                  {horarios.map((horario) => (
-                    <option key={horario.horario} value={horario.horario}>
-                      {horario.horario}
-                      {' '}
-                      (
-                      {horario.cuposDisponibles}
-                      {' '}
-                      cupos)
-                    </option>
-                  ))}
+                  {horarios.map((horario) => {
+                    const sinCupos = !horario.cuposDisponibles || horario.cuposDisponibles === 0;
+                    return (
+                      <option
+                        key={horario.horario}
+                        value={horario.horario}
+                        disabled={sinCupos}
+                        className={sinCupos ? 'opcion-sin-cupos' : ''}
+                        title={sinCupos ? 'Sin cupos disponibles' : `${horario.cuposDisponibles} cupos disponibles`}
+                      >
+                        {horario.horario} ({horario.cuposDisponibles} cupos)
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
             </div>

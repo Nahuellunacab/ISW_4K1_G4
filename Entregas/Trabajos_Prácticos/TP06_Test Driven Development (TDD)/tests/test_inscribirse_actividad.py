@@ -200,7 +200,7 @@ class TestInscripcionActividad(unittest.TestCase):
                     'nombre': 'Julian',
                     'tallaVestimenta': 'M',
                     'edad': 21,
-                    'DNI': '44152639'
+                    'DNI': '44652639'
                 },
                 {
                     'nombre': 'Fernando',

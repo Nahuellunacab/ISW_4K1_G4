@@ -299,6 +299,18 @@
   background: #3DA35D;
 }
 
+/* Opciones sin cupos: visualmente en gris y con fondo suave */
+select option[disabled],
+.opcion-sin-cupos {
+  color: #8b8b8b;
+  background-color: #f5f5f5;
+}
+
+/* En algunos navegadores la pseudo-clase funciona mejor */
+select option:disabled {
+  color: #8b8b8b;
+}
+
 @media (max-width: 768px) {
   .pasos {
     flex-direction: column;

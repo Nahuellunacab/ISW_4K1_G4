@@ -48,6 +48,10 @@ MSG_ERROR_HORARIO_NO_EXISTE = (
     "El horario seleccionado no existe para la actividad indicada"
 )
 
+MSG_ERROR_DNI_CONFLICTO = (
+    "El/los DNI(s) {dnis} ya están inscriptos en ese mismo horario. "
+    "Una persona no puede inscribirse más de una vez en el mismo horario."
+)
 
 # =============================
 # Clase Resultado
@@ -314,6 +318,22 @@ class RepositorioActividadesSQLite:
                 for row in rows
             ]
 
+    def existe_inscripcion_dni_en_horario(self, dni: str, horario: str) -> bool:
+        """
+        Devuelve True si existe una inscripción con el DNI en el mismo horario
+        (independiente de la actividad).
+        """
+        query = """
+        SELECT 1
+        FROM inscripciones i
+        JOIN horarios h ON i.horario_id = h.id
+        WHERE i.dni = ? AND h.hora = ?
+        LIMIT 1
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(query, (dni, horario))
+            return cur.fetchone() is not None
 
 # Instancia global del repositorio (inicialización lazy para evitar problemas con tests)
 _repositorio_instance = None
@@ -493,6 +513,29 @@ def _validar_horario_parque(payload: Dict[str, Any]) -> ResultadoInscripcion:
 
     return None
 
+def _validar_conflicto_dni_horario(payload: Dict[str, Any]) -> ResultadoInscripcion:
+    """
+    Valida que ninguno de los DNI en la nueva inscripción ya esté
+    inscripto en otra actividad en el mismo horario.
+    """
+    repo = get_repositorio()
+    actividad = payload.get('actividad', '')
+    horario = payload.get('horario', '')
+    personas = payload.get('personas', [])
+
+    conflictos = set()
+    for persona in personas:
+        dni = str(persona.get('DNI', '')).strip()
+        if not dni:
+            continue
+        if repo.existe_inscripcion_dni_en_horario(dni, horario):
+            conflictos.add(dni)
+
+    if conflictos:
+        dnis_str = ','.join(sorted(conflictos))
+        return ResultadoInscripcion(False, MSG_ERROR_DNI_CONFLICTO.format(dnis=dnis_str))
+    return None
+
 
 # =============================
 # Lógica principal
@@ -505,14 +548,15 @@ def inscribirse_a_actividad(payload: Dict[str, Any]) -> str:
         JSON string con el resultado de la inscripción
     """
     validaciones = [
-        _validar_terminos_condiciones,
-        _validar_datos_personas,
-        _validar_talla_vestimenta,
-        _validar_edad_minima,
-        _validar_horario_parque,
-        _validar_horario_existente,
-        _validar_cantidad_personas,
-        _validar_cupo_disponible
+         _validar_terminos_condiciones,
+         _validar_datos_personas,
+         _validar_talla_vestimenta,
+         _validar_edad_minima,
+         _validar_horario_parque,
+         _validar_horario_existente,
+        _validar_conflicto_dni_horario,
+         _validar_cantidad_personas,
+         _validar_cupo_disponible
     ]
 
     for validacion in validaciones:
