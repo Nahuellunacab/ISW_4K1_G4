@@ -33,7 +33,9 @@ npm run dev
 http://localhost:3000/
 ```
 ## Para ejecutar los tests
-Las pruebas se pueden correr desde la consola, desde la carpeta backend, con el comando:
+Las pruebas se pueden correr de dos maneras:
+1. Desde la consola, ubicándose en la carpeta backend, con el comando:
 ```
 python -m unittest tests.test_inscribirse_actividad.TestInscripcionActividad
 ```
+2. Desde Visual Studio Code presionando el botón de play que aparece en la parte superior derecha del archivo con los tests.
