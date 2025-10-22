@@ -1,13 +1,11 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
+*/__pycache__/
 *.py[cod]
 *$py.class
 
 */_pycache_/*
 */.vscode/*
 # Databases
-actividades.db
+*.db
 *.sqlite3
-
-# Project-specific
-chat.md
+*/venv/
