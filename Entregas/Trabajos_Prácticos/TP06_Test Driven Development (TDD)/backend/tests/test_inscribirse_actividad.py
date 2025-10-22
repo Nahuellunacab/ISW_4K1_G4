@@ -75,7 +75,7 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertFalse(parsed['exito'])
         self.assertIn("talla de vestimenta", parsed['mensaje'].lower())
 
-    @patch('inscribirse_actividad.get_repositorio')
+    @patch('src.inscribirse_actividad.get_repositorio')
     def test_inscribirse_sin_cupo_en_horario_seleccionado_debe_fallar(self, mock_get_repositorio):
         """
         Verificar que NO se permite la inscripción cuando no hay cupo.
@@ -142,7 +142,7 @@ class TestInscripcionActividad(unittest.TestCase):
         self.assertFalse(parsed['exito'])
         self.assertIn("edad insuficiente", parsed['mensaje'].lower())
 
-    @patch('inscribirse_actividad.get_repositorio')
+    @patch('src.inscribirse_actividad.get_repositorio')
     def test_inscribirse_exitosamente_con_todos_los_datos_correctos(self, mock_get_repositorio):
         """
         Verificar que la inscripción es exitosa con datos válidos.
@@ -187,7 +187,7 @@ class TestInscripcionActividad(unittest.TestCase):
             'Tirolesa', '10:00 GMT-3', 1
         )
 
-    @patch('inscribirse_actividad.get_repositorio')
+    @patch('src.inscribirse_actividad.get_repositorio')
     def test_inscribirse_a_actividad_sin_requerir_vestimenta(self, mock_get_repositorio):
         """
         Verificar inscripción exitosa en actividad sin requerimiento de vestimenta.
@@ -223,7 +223,7 @@ class TestInscripcionActividad(unittest.TestCase):
         mock_repo_instance.agregar_inscripcion.assert_called_once()
         mock_repo_instance.descontar_cupo.assert_called_once()
 
-    @patch('inscribirse_actividad.get_repositorio')
+    @patch('src.inscribirse_actividad.get_repositorio')
     def test_inscribirse_en_horario_no_disponible_debe_fallar(self, mock_get_repositorio):
         """
         Verificar que la inscripción falla si el horario no existe en el repositorio.
@@ -254,7 +254,7 @@ class TestInscripcionActividad(unittest.TestCase):
         # === VERIFICACIÓN DEL MOCK ===
         mock_repo_instance.agregar_inscripcion.assert_not_called()
 
-    @patch('inscribirse_actividad.get_repositorio')
+    @patch('src.inscribirse_actividad.get_repositorio')
     def test_inscribirse_con_multiples_personas_validas(self, mock_get_repositorio):
         """
         Verificar que se puede inscribir múltiples personas válidas.

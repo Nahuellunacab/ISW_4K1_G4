@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from inscribirse_actividad import inscribirse_a_actividad
+from backend.src.inscribirse_actividad import inscribirse_a_actividad
 import json
 
 print("=" * 80)
