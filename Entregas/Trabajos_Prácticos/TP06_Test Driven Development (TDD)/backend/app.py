@@ -18,7 +18,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 )
 
-from inscribirse_actividad import (
+from src.inscribirse_actividad import (
     inscribirse_a_actividad,
     get_repositorio
 )
