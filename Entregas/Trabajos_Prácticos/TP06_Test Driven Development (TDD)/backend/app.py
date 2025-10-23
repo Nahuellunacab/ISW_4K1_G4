@@ -12,6 +12,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sys
 import os
+import logging
+from datetime import datetime
 
 # Agregar src al path
 sys.path.insert(
@@ -25,7 +27,14 @@ from src.inscribirse_actividad import (
 
 # Inicializar Flask
 app = Flask(__name__)
-CORS(app)
+
+# ✅ CONFIGURACIÓN CORS SEGURA
+CORS(app, 
+     origins=["http://localhost:3000"],  # Solo tu frontend
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"],
+     supports_credentials=False  # No enviar cookies por defecto
+)
 
 
 def obtener_repositorio():
@@ -159,6 +168,39 @@ def health_check():
         'status': 'OK',
         'mensaje': 'API funcionando correctamente'
     }), 200
+
+
+# ✅ MIDDLEWARE DE SEGURIDAD
+@app.after_request
+def add_security_headers(response):
+    """Agregar headers de seguridad a todas las respuestas."""
+    # Prevenir ataques XSS
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    
+    # No revelar información del servidor
+    response.headers.pop('Server', None)
+    
+    # Política de contenido estricta
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_security_errors(error):
+    """
+    Manejo seguro de errores - no exponer stack traces.
+    """
+    # Log del error para debugging (sin exponer al cliente)
+    app.logger.error(f"Error interno: {str(error)} - {datetime.now()}")
+    
+    # Respuesta genérica para el cliente
+    return jsonify({
+        'exito': False,
+        'mensaje': 'Error interno del servidor'
+    }), 500
 
 
 if __name__ == '__main__':
