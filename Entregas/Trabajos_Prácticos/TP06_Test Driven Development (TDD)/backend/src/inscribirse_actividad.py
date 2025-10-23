@@ -145,45 +145,121 @@ class RepositorioActividadesSQLite:
         Este método solo inserta datos si no están presentes,
         sin resetear ni modificar datos existentes.
         """
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
+    with sqlite3.connect(self.db_path) as conn:
+        cur = conn.cursor()
 
-            # Actividades base - Solo insertar si no existen
-            actividades = [
-                ('Tirolesa', 1),
-                ('Palestra', 1),
-                ('Safari', 0),
-                ('Jardineria', 0)
-            ]
-            
-            for nombre, requiere in actividades:
-                cur.execute(
-                    "INSERT OR IGNORE INTO actividades (nombre, requiere_vestimenta) VALUES (?, ?)",
-                    (nombre, requiere)
-                )
+        # Actividades base - Solo insertar si no existen
+        actividades = [
+            ('Tirolesa', 1),
+            ('Palestra', 1),
+            ('Safari', 0),
+            ('Jardineria', 0)
+        ]
+        
+        for nombre, requiere in actividades:
+            cur.execute(
+                "INSERT OR IGNORE INTO actividades (nombre, requiere_vestimenta) VALUES (?, ?)",
+                (nombre, requiere)
+            )
 
-            # Horarios con cupos iniciales - Solo insertar si no existen
-            horarios_iniciales = [
-                ('Tirolesa', '10:00 GMT-3', 10),
-                ('Palestra', '09:30 GMT-3', 12),
-                ('Safari', '14:00 GMT-3', 8),
-                ('Jardineria', '10:30 GMT-3', 12),
-            ]
-            
-            for actividad_nombre, hora, cupos in horarios_iniciales:
-                # Insertar solo si no existe (gracias a UNIQUE constraint)
-                cur.execute(
-                    """
-                    INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles, cupos_iniciales)
-                    VALUES (
-                        (SELECT id FROM actividades WHERE nombre = ?),
-                        ?, ?, ?
-                    )
-                    """,
-                    (actividad_nombre, hora, cupos, cupos)
+        # Horarios con cupos iniciales - Solo insertar si no existen
+        horarios_iniciales = [
+            # Tirolesa (actividad_id = 1, cupos_iniciales = 10)
+            ('Tirolesa', '09:00 GMT-3', 10),
+            ('Tirolesa', '09:30 GMT-3', 10),
+            ('Tirolesa', '10:00 GMT-3', 10),
+            ('Tirolesa', '10:30 GMT-3', 10),
+            ('Tirolesa', '11:00 GMT-3', 10),
+            ('Tirolesa', '11:30 GMT-3', 10),
+            ('Tirolesa', '12:00 GMT-3', 10),
+            ('Tirolesa', '12:30 GMT-3', 10),
+            ('Tirolesa', '13:00 GMT-3', 10),
+            ('Tirolesa', '13:30 GMT-3', 10),
+            ('Tirolesa', '14:00 GMT-3', 10),
+            ('Tirolesa', '14:30 GMT-3', 10),
+            ('Tirolesa', '15:00 GMT-3', 10),
+            ('Tirolesa', '15:30 GMT-3', 10),
+            ('Tirolesa', '16:00 GMT-3', 10),
+            ('Tirolesa', '16:30 GMT-3', 10),
+            ('Tirolesa', '17:00 GMT-3', 10),
+            ('Tirolesa', '17:30 GMT-3', 10),
+
+            # Palestra (actividad_id = 2, cupos_iniciales = 12)
+            ('Palestra', '09:00 GMT-3', 12),
+            ('Palestra', '09:30 GMT-3', 12),
+            ('Palestra', '10:00 GMT-3', 12),
+            ('Palestra', '10:30 GMT-3', 12),
+            ('Palestra', '11:00 GMT-3', 12),
+            ('Palestra', '11:30 GMT-3', 12),
+            ('Palestra', '12:00 GMT-3', 12),
+            ('Palestra', '12:30 GMT-3', 12),
+            ('Palestra', '13:00 GMT-3', 12),
+            ('Palestra', '13:30 GMT-3', 12),
+            ('Palestra', '14:00 GMT-3', 12),
+            ('Palestra', '14:30 GMT-3', 12),
+            ('Palestra', '15:00 GMT-3', 12),
+            ('Palestra', '15:30 GMT-3', 12),
+            ('Palestra', '16:00 GMT-3', 12),
+            ('Palestra', '16:30 GMT-3', 12),
+            ('Palestra', '17:00 GMT-3', 12),
+            ('Palestra', '17:30 GMT-3', 12),
+
+            # Safari (actividad_id = 3, cupos_iniciales = 8)
+            ('Safari', '09:00 GMT-3', 8),
+            ('Safari', '09:30 GMT-3', 8),
+            ('Safari', '10:00 GMT-3', 8),
+            ('Safari', '10:30 GMT-3', 8),
+            ('Safari', '11:00 GMT-3', 8),
+            ('Safari', '11:30 GMT-3', 8),
+            ('Safari', '12:00 GMT-3', 8),
+            ('Safari', '12:30 GMT-3', 8),
+            ('Safari', '13:00 GMT-3', 8),
+            ('Safari', '13:30 GMT-3', 8),
+            ('Safari', '14:00 GMT-3', 8),
+            ('Safari', '14:30 GMT-3', 8),
+            ('Safari', '15:00 GMT-3', 8),
+            ('Safari', '15:30 GMT-3', 8),
+            ('Safari', '16:00 GMT-3', 8),
+            ('Safari', '16:30 GMT-3', 8),
+            ('Safari', '17:00 GMT-3', 8),
+            ('Safari', '17:30 GMT-3', 8),
+
+            # Jardinería (actividad_id = 4, cupos_iniciales = 12)
+            ('Jardineria', '09:00 GMT-3', 12),
+            ('Jardineria', '09:30 GMT-3', 12),
+            ('Jardineria', '10:00 GMT-3', 12),
+            ('Jardineria', '10:30 GMT-3', 12),
+            ('Jardineria', '11:00 GMT-3', 12),
+            ('Jardineria', '11:30 GMT-3', 12),
+            ('Jardineria', '12:00 GMT-3', 12),
+            ('Jardineria', '12:30 GMT-3', 12),
+            ('Jardineria', '13:00 GMT-3', 12),
+            ('Jardineria', '13:30 GMT-3', 12),
+            ('Jardineria', '14:00 GMT-3', 12),
+            ('Jardineria', '14:30 GMT-3', 12),
+            ('Jardineria', '15:00 GMT-3', 12),
+            ('Jardineria', '15:30 GMT-3', 12),
+            ('Jardineria', '16:00 GMT-3', 12),
+            ('Jardineria', '16:30 GMT-3', 12),
+            ('Jardineria', '17:00 GMT-3', 12),
+            ('Jardineria', '17:30 GMT-3', 12),
+        ]
+        
+        for actividad_nombre, hora, cupos in horarios_iniciales:
+            # Insertar solo si no existe (gracias a UNIQUE constraint)
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO horarios (actividad_id, hora, cupos_disponibles, cupos_iniciales)
+                VALUES (
+                    (SELECT id FROM actividades WHERE nombre = ?),
+                    ?, ?, ?
                 )
-            
-            conn.commit()
+                """,
+                (actividad_nombre, hora, cupos, cupos)
+            )
+        
+        conn.commit()
+
 
     # Función para verificar si un horario existe para una actividad
     # -> Test inscribirse horario no disponible
